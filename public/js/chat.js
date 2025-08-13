@@ -153,6 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (success) {
       searchInput.value = "";
       searchResults.style.display = "none";
+      console.log("dentro");
       loadChats();
     } else {
       console.log(success);
