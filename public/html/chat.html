@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Le mie Chat</title>
+    <link rel="stylesheet" href="/css/chat.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="chat-login-bg">
+      <div class="chat-card">
+        <div class="chat-header">
+          <h1><i class="fas fa-comments"></i> RealTimeChat</h1>
+        </div>
+        <div class="chat-content">
+          <div class="chat-sidebar">
+            <form id="search-chat-form" class="search-chat-form">
+              <input
+                type="text"
+                id="search-chat-input"
+                placeholder="Cerca chat..."
+              />
+              <button type="submit" class="search-btn">
+                <i class="fas fa-search"></i>
+              </button>
+            </form>
+            <form id="create-chat-form" class="create-chat-form">
+              <input
+                name="nameNewChat"
+                type="text"
+                id="create-chat-input"
+                placeholder="Nome nuova chat..."
+                required
+              />
+              <button type="submit" class="create-btn">
+                <i class="fas fa-plus"></i> Crea
+              </button>
+              <div id="search-results" class="search-results"></div>
+            </form>
+          </div>
+          <div class="chat-main">
+            <div class="chat-list-column">
+              <h2 class="chat-list-heading">Le mie Chat</h2>
+              <ul id="chats" class="chat-list"></ul>
+            </div>
+            <div class="message-column">
+              <div class="main-header">
+                <h2 id="chat-title">Seleziona una chat</h2>
+              </div>
+              <ul id="messages" class="message-list">
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+                <li>prova</li>
+              </ul>
+              <form id="message-form" class="message-form">
+                <input
+                  type="text"
+                  id="message-input"
+                  placeholder="Scrivi un messaggio..."
+                  required
+                />
+                <button type="submit" class="send-btn">
+                  <i class="fas fa-paper-plane"></i> Invia
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="/js/chat.js"></script>
+  </body>
+</html>

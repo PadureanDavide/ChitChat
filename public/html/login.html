@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Login</title>
+    <link rel="stylesheet" href="/css/login.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="login-container">
+      <h1><i class="fas fa-comments"></i> RealTimeChat</h1>
+      <form action="/login" method="POST">
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input type="email" name="email" placeholder="Email" required />
+        </div>
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+          />
+        </div>
+        <button type="submit" class="login-btn">Accedi</button>
+        <p class="register-link">
+          Non hai un account? <a href="/register">Registrati</a>
+        </p>
+      </form>
+    </div>
+  </body>
+</html>
