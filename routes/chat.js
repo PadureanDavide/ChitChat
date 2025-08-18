@@ -7,6 +7,8 @@ const {
   createChat,
   searchUsers,
   getChatMessages,
+  searchChat,
+  saveMessage,
 } = require("../controllers/chat");
 
 router.use(auth);
@@ -15,6 +17,10 @@ router.route("/").get(chatIndex);
 router.route("/createChat").post(createChat);
 router.route("/getChats").get(getChats);
 router.route("/searchUsers").get(searchUsers);
-router.route("/messages/:chatId").get(getChatMessages);
+router.route("/searchChats").get(searchChat);
+
+// Salva un messaggio (REST fallback, opzionale)
+router.route("/messages").post(saveMessage);
+router.route("/messages").get(getChatMessages);
 
 module.exports = router;

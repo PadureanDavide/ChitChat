@@ -37,13 +37,53 @@ app.use("/chat", chat);
 app.use(notFound);
 app.use(errorHandlerMiddleware);
 
-const port = process.env.PORT || 3000;
+// SOCKET.IO SETUP
+const http = require("http");
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server);
+const Message = require("./models/message");
 
-//try and connect to database, and console log to see if the server is online
+io.on("connection", (socket) => {
+  socket.on("joinChat", (chatId) => {
+    socket.join(chatId);
+  });
+
+  socket.on("sendMessage", async (data) => {
+    // data: { chatId, sender, content }
+    console.log(data);
+    try {
+      if (!data.chatId || !data.sender || !data.content) {
+        socket.emit("errorMessage", "Dati messaggio non validi");
+        return;
+      }
+      // Verifica che la chat esista
+      const chatExists = await Message.db.model("Chat").findById(data.chatId);
+      if (!chatExists) {
+        socket.emit("errorMessage", "Chat non trovata");
+        return;
+      }
+      const newMessage = await Message.create({
+        chat: data.chatId,
+        sender: data.sender,
+        content: data.content,
+      });
+      io.to(data.chatId).emit("newMessage", newMessage);
+    } catch (err) {
+      console.error("Errore salvataggio messaggio:", err);
+      socket.emit(
+        "errorMessage",
+        "Errore durante il salvataggio del messaggio"
+      );
+    }
+  });
+});
+
+const port = process.env.PORT || 3000;
 const start = async () => {
   try {
     await connectDB(process.env.MONGO_URI);
-    app.listen(port, "0.0.0.0", () =>
+    server.listen(port, "0.0.0.0", () =>
       console.log(`Server is listening: ${port}...`)
     );
   } catch (error) {

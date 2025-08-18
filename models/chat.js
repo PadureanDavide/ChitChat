@@ -9,6 +9,7 @@ const ChatSchema = new mongoose.Schema(
     },
     nameChat: {
       type: String,
+      default: "",
     },
     createdBy: {
       type: String,

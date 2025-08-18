@@ -1,134 +1,151 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Socket.IO client setup
+  const socket = io();
+  let currentChatId = null;
   const chatList = document.getElementById("chats");
   const searchInput = document.getElementById("create-chat-input");
+  const searchChat = document.getElementById("search-chat-input");
   const searchResults = document.getElementById("search-results");
   const createChatForm = document.getElementById("create-chat-form");
 
   // Funzione per cercare utenti
   const searchUsers = async (query) => {
-    try {
-      const {
-        data: { users },
-      } = await axios.get(`/chat/searchUsers?email=${query}`);
+    const {
+      data: { users },
+    } = await axios.get(`/chat/searchUsers?email=${query}`);
 
-      searchResults.innerHTML = "";
+    searchResults.innerHTML = "";
 
-      if (users.length > 0) {
-        users.forEach((user) => {
-          const resultItem = document.createElement("div");
-          resultItem.className = "user-result";
+    if (users.length > 0) {
+      users.forEach((user) => {
+        const resultItem = document.createElement("div");
+        resultItem.className = "user-result";
 
-          const nameElement = document.createElement("div");
-          nameElement.className = "user-name";
-          nameElement.textContent = user.name || "Nome non disponibile";
+        const nameElement = document.createElement("div");
+        nameElement.className = "user-name";
+        nameElement.textContent = user.name || "Nome non disponibile";
 
-          const emailElement = document.createElement("div");
-          emailElement.className = "user-email";
-          emailElement.textContent = user.email;
+        const emailElement = document.createElement("div");
+        emailElement.className = "user-email";
+        emailElement.textContent = user.email;
 
-          resultItem.appendChild(nameElement);
-          resultItem.appendChild(emailElement);
+        resultItem.appendChild(nameElement);
+        resultItem.appendChild(emailElement);
 
-          resultItem.addEventListener("click", () => {
-            searchInput.value = user.email;
-            searchResults.style.display = "none";
-          });
-
-          searchResults.appendChild(resultItem);
+        resultItem.addEventListener("click", () => {
+          searchInput.value = user.email;
+          searchResults.style.display = "none";
         });
-        searchResults.style.display = "block";
-      } else {
-        searchResults.style.display = "none";
-      }
-    } catch (error) {
-      console.error("Errore nella ricerca degli utenti:", error);
+
+        searchResults.appendChild(resultItem);
+      });
+      searchResults.style.display = "block";
+    } else {
       searchResults.style.display = "none";
     }
   };
 
   // load all the personal chats
-  const loadChats = async () => {
-    try {
-      const {
+  const loadChats = async (num, val) => {
+    if (num === 0) {
+      var {
         data: { chatsCompleted },
       } = await axios.get("/chat/getChats");
-
-      chatList.innerHTML = "";
-      chatsCompleted.forEach((chat) => {
-        const li = document.createElement("li");
-        li.className = "chat-item";
-        li.dataset.chatId = chat.withid; // Aggiunto per identificare la chat
-
-        const nameElement = document.createElement("div");
-        nameElement.className = "chat-name";
-        nameElement.textContent = chat.nameEmail.name || "Chat senza nome";
-
-        // Aggiungi altri dettagli se disponibili (es. ultimo messaggio o partecipanti)
-        const detailsElement = document.createElement("div");
-        detailsElement.className = "chat-details";
-
-        if (chat.lastMessage) {
-          detailsElement.textContent = `Ultimo messaggio: ${chat.lastMessage}`;
-        } else if (chat.participants) {
-          detailsElement.textContent = `${chat.participants.length} partecipanti`;
-        } else {
-          detailsElement.textContent = chat.nameEmail.email;
-        }
-
-        li.appendChild(nameElement);
-        li.appendChild(detailsElement);
-
-        // Aggiungi eventuale gestione del click
-        li.addEventListener("click", () => {
-          // Seleziona la chat e carica i messaggi
-          document.querySelectorAll(".chat-list li").forEach((item) => {
-            item.classList.remove("selected");
-          });
-          li.classList.add("selected");
-          loadMessages(chat._id);
-        });
-
-        chatList.appendChild(li);
-      });
-    } catch (error) {
-      console.error("Errore nel caricamento delle chat:", error);
+    } else {
+      var {
+        data: { chatsCompleted },
+      } = await axios.get(`/chat/searchChats?chat=${val}`);
     }
+
+    chatList.innerHTML = "";
+    chatsCompleted.forEach((chat) => {
+      const li = document.createElement("li");
+      li.className = "chat-item";
+      li.dataset.chatId = chat._id; // Usa sempre _id
+
+      const nameElement = document.createElement("div");
+      nameElement.className = "chat-name";
+      nameElement.textContent = chat.nameEmail?.name || "Chat senza nome";
+
+      // Aggiungi altri dettagli se disponibili (es. ultimo messaggio o partecipanti)
+      const detailsElement = document.createElement("div");
+      detailsElement.className = "chat-details";
+
+      if (chat.lastMessage) {
+        detailsElement.textContent = `Ultimo messaggio: ${chat.lastMessage}`;
+      } else if (chat.participants) {
+        detailsElement.textContent = `${chat.participants.length} partecipanti`;
+      } else {
+        detailsElement.textContent = chat.nameEmail?.email || "";
+      }
+
+      li.appendChild(nameElement);
+      li.appendChild(detailsElement);
+
+      // LISTENER to click on a chat
+      li.addEventListener("click", () => {
+        document.querySelectorAll(".chat-list li").forEach((item) => {
+          item.classList.remove("selected");
+        });
+        li.classList.add("selected");
+        loadMessages(chat._id);
+      });
+
+      chatList.appendChild(li);
+    });
   };
 
   // Funzione per caricare i messaggi di una chat specifica
   const loadMessages = async (chatId) => {
-    try {
-      const {
-        data: { messages },
-      } = await axios.get(`/chat/messages/${chatId}`);
-
-      const messageList = document.getElementById("messages");
-      messageList.innerHTML = "";
-
-      messages.forEach((message) => {
-        const li = document.createElement("li");
-        li.textContent = message.content;
-        messageList.appendChild(li);
-      });
-    } catch (error) {
-      console.error("Errore nel caricamento dei messaggi:", error);
-    }
+    currentChatId = chatId;
+    socket.emit("joinChat", chatId);
+    const {
+      data: { messages },
+    } = await axios.get(`/chat/messages?chat=${chatId}`);
+    const messageList = document.getElementById("messages");
+    messageList.innerHTML = "";
+    messages.forEach((message) => {
+      const li = document.createElement("li");
+      li.textContent = message.content;
+      messageList.appendChild(li);
+    });
   };
 
-  // Funzione per inviare un messaggio
+  // Funzione per inviare un messaggio (real-time + salvataggio DB)
   const sendMessage = async (chatId, content) => {
-    try {
-      const response = await axios.post(`/chat/messages/${chatId}`, {
-        content,
-      });
-      if (response.status === 200) {
-        loadMessages(chatId); // Ricarica i messaggi dopo l'invio
-      }
-    } catch (error) {
-      console.error("Errore nell'invio del messaggio:", error);
+    // Recupera l'utente loggato (puoi migliorare con JWT/cookie)
+    let sender = window.currentUserEmail;
+    if (!sender) {
+      // fallback: prova a ricavare da un meta tag o altro
+      const meta = document.querySelector('meta[name="user-email"]');
+      sender = meta ? meta.content : "anonimo";
     }
+    socket.emit("sendMessage", { chatId, sender, content });
+    // Mostra subito il messaggio nella lista
+    const messageList = document.getElementById("messages");
+    const li = document.createElement("li");
+    li.textContent = content;
+    messageList.appendChild(li);
+    messageList.scrollTop = messageList.scrollHeight;
+
+    await axios.post("/chat/messages", {
+      message: content,
+    });
   };
 
+  // Ricezione messaggi in tempo reale
+  socket.on("newMessage", (message) => {
+    console.log(message);
+    if (message.chat === currentChatId) {
+      const messageList = document.getElementById("messages");
+      const li = document.createElement("li");
+      li.textContent = message.content;
+      messageList.appendChild(li);
+      messageList.scrollTop = messageList.scrollHeight;
+    }
+  });
+
+  //---------------------------------------------------------------------------------------------
   // LISTENER inputs for searching users
   searchInput.addEventListener("input", (event) => {
     const query = event.target.value.trim();
@@ -153,13 +170,31 @@ document.addEventListener("DOMContentLoaded", () => {
     if (success) {
       searchInput.value = "";
       searchResults.style.display = "none";
-      console.log("dentro");
-      loadChats();
+      loadChats(0, "");
     } else {
-      console.log(success);
     }
   });
 
+  //LISTENER to search a chat
+  searchChat.addEventListener("input", async (event) => {
+    const query = event.target.value.trim();
+    if (query !== "") loadChats(1, query);
+    else loadChats(0, "");
+  });
+
+  // Invio messaggio dal form
+  const messageForm = document.getElementById("message-form");
+  const messageInput = document.getElementById("message-input");
+  if (messageForm && messageInput) {
+    messageForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (currentChatId && messageInput.value.trim()) {
+        sendMessage(currentChatId, messageInput.value.trim());
+        messageInput.value = "";
+      }
+    });
+  }
+
   //---------------------------------------------------------
-  loadChats();
+  loadChats(0, "");
 });
