@@ -113,8 +113,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Funzione per inviare un messaggio (real-time + salvataggio DB)
   const sendMessage = async (chatId, content) => {
+    console.log(chatId, content);
     // Recupera l'utente loggato (puoi migliorare con JWT/cookie)
     let sender = window.currentUserEmail;
+    console.log(sender);
+
     if (!sender) {
       // fallback: prova a ricavare da un meta tag o altro
       const meta = document.querySelector('meta[name="user-email"]');

@@ -75,7 +75,9 @@ const login = async (req, res) => {
     // path: "/refresh", //update only when /refresh path is called
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
-  res.status(StatusCodes.OK).redirect("/chat");
+  // Genera un token JWT e includi l'email nella risposta
+  const token = user.createJWT();
+  res.status(StatusCodes.OK).json({ email: user.email, token });
 };
 
 //-------------------------------------------------------

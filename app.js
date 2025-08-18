@@ -44,37 +44,20 @@ const { Server } = require("socket.io");
 const io = new Server(server);
 const Message = require("./models/message");
 
+//establish a new connection, under the name "socket"
 io.on("connection", (socket) => {
+  //a client enters the event "joinChat" with the chatId
   socket.on("joinChat", (chatId) => {
-    socket.join(chatId);
+    socket.join(chatId); //add the socket to that room, so the user can only send messages there
   });
 
+  //when a client send's a message
   socket.on("sendMessage", async (data) => {
     // data: { chatId, sender, content }
     console.log(data);
-    try {
-      if (!data.chatId || !data.sender || !data.content) {
-        socket.emit("errorMessage", "Dati messaggio non validi");
-        return;
-      }
-      // Verifica che la chat esista
-      const chatExists = await Message.db.model("Chat").findById(data.chatId);
-      if (!chatExists) {
-        socket.emit("errorMessage", "Chat non trovata");
-        return;
-      }
-      const newMessage = await Message.create({
-        chat: data.chatId,
-        sender: data.sender,
-        content: data.content,
-      });
-      io.to(data.chatId).emit("newMessage", newMessage);
-    } catch (err) {
-      console.error("Errore salvataggio messaggio:", err);
-      socket.emit(
-        "errorMessage",
-        "Errore durante il salvataggio del messaggio"
-      );
+    if (!data.chatId || !data.sender || !data.content) {
+      socket.emit("errorMessage", "Dati messaggio non validi");
+      return;
     }
   });
 });
