@@ -118,6 +118,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  // Function to scroll to the bottom of the messages container
+  const scrollToBottom = () => {
+    const messagesContainer = document.getElementById("messages");
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  };
+
   // Funzione unificata per caricare i messaggi
   const loadMessages = async (chatId) => {
     currentChatId = chatId;
@@ -137,16 +143,22 @@ document.addEventListener("DOMContentLoaded", () => {
       messageContainer.textContent = message;
       messagesContainer.appendChild(messageContainer);
     });
+
+    scrollToBottom();
   };
 
   // Receive messages
   socket.on("receiveMessage", (data) => {
-    const { message, createdBy } = data;
-    const messageContainer = document.createElement("div");
-    messageContainer.className =
-      createdBy === currentUserEmail ? "message-right" : "message-left";
-    messageContainer.textContent = message;
-    document.getElementById("messages").appendChild(messageContainer);
+    if (data.currentChatId === currentChatId) {
+      const { message, createdBy } = data;
+      const messageContainer = document.createElement("div");
+      messageContainer.className =
+        createdBy === currentUserEmail ? "message-right" : "message-left";
+      messageContainer.textContent = message;
+      document.getElementById("messages").appendChild(messageContainer);
+
+      scrollToBottom();
+    }
   });
 
   // Listener per cercare utenti
