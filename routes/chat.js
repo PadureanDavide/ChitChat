@@ -6,12 +6,10 @@ const {
   getChats,
   createChat,
   searchUsers,
-  getChatMessages,
   searchChat,
   saveMessage,
+  getMessages,
 } = require("../controllers/chat");
-
-router.use(auth);
 
 router.route("/").get(chatIndex);
 router.route("/createChat").post(createChat);
@@ -21,6 +19,6 @@ router.route("/searchChats").get(searchChat);
 
 // Salva un messaggio (REST fallback, opzionale)
 router.route("/messages").post(saveMessage);
-router.route("/messages").get(getChatMessages);
+router.route("/messages/:chatAt").get(getMessages);
 
 module.exports = router;

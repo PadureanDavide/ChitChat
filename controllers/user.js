@@ -10,6 +10,12 @@ const {
 const path = require("path");
 
 //-------------------------------------------------------
+//get email
+const getEmail = async (req, res) => {
+  res.status(StatusCodes.OK).json({ email: req.user.email });
+};
+
+//-------------------------------------------------------
 //register
 const register = async (req, res) => {
   const user = await User.create({ ...req.body });
@@ -76,12 +82,11 @@ const login = async (req, res) => {
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
   // Genera un token JWT e includi l'email nella risposta
-  const token = user.createJWT();
-  res.status(StatusCodes.OK).json({ email: user.email, token });
+  res.status(StatusCodes.OK).redirect("/chat");
 };
 
 //-------------------------------------------------------
 //logout
 const logout = async (req, res) => {};
 
-module.exports = { loginIndex, login, registerIndex, register };
+module.exports = { loginIndex, login, registerIndex, register, getEmail };

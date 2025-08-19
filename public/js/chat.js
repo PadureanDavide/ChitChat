@@ -1,12 +1,23 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Socket.IO client setup
-  const socket = io();
   let currentChatId = null;
+  let currentUserEmail = null;
+
   const chatList = document.getElementById("chats");
   const searchInput = document.getElementById("create-chat-input");
   const searchChat = document.getElementById("search-chat-input");
   const searchResults = document.getElementById("search-results");
   const createChatForm = document.getElementById("create-chat-form");
+
+  // Fetch the current user's email via Axios
+  const fetchUserEmail = async () => {
+    const {
+      data: { email },
+    } = await axios.get("/getEmail");
+    currentUserEmail = email;
+  };
+
+  // Call fetchUserEmail on page load
+  fetchUserEmail();
 
   // Funzione per cercare utenti
   const searchUsers = async (query) => {
@@ -45,29 +56,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // load all the personal chats
+  // Carica tutte le chat personali
   const loadChats = async (num, val) => {
+    let chatsCompleted;
     if (num === 0) {
-      var {
-        data: { chatsCompleted },
-      } = await axios.get("/chat/getChats");
+      const response = await axios.get("/chat/getChats");
+      chatsCompleted = response.data.chatsCompleted;
     } else {
-      var {
-        data: { chatsCompleted },
-      } = await axios.get(`/chat/searchChats?chat=${val}`);
+      const response = await axios.get(`/chat/searchChats?chat=${val}`);
+      chatsCompleted = response.data.chatsCompleted;
     }
 
     chatList.innerHTML = "";
     chatsCompleted.forEach((chat) => {
       const li = document.createElement("li");
       li.className = "chat-item";
-      li.dataset.chatId = chat._id; // Usa sempre _id
+      li.dataset.chatId = chat._id;
 
       const nameElement = document.createElement("div");
       nameElement.className = "chat-name";
       nameElement.textContent = chat.nameEmail?.name || "Chat senza nome";
 
-      // Aggiungi altri dettagli se disponibili (es. ultimo messaggio o partecipanti)
       const detailsElement = document.createElement("div");
       detailsElement.className = "chat-details";
 
@@ -82,7 +91,6 @@ document.addEventListener("DOMContentLoaded", () => {
       li.appendChild(nameElement);
       li.appendChild(detailsElement);
 
-      // LISTENER to click on a chat
       li.addEventListener("click", () => {
         document.querySelectorAll(".chat-list li").forEach((item) => {
           item.classList.remove("selected");
@@ -95,61 +103,53 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // Funzione per caricare i messaggi di una chat specifica
+  const socket = io();
+
+  // Send a message
+  const sendMessage = async (message) => {
+    // Save message to the database
+    await axios.post("/chat/messages", { message, currentChatId });
+
+    // Emit the message to the server
+    socket.emit("sendMessage", {
+      message,
+      currentChatId,
+      createdBy: currentUserEmail,
+    });
+  };
+
+  // Funzione unificata per caricare i messaggi
   const loadMessages = async (chatId) => {
     currentChatId = chatId;
     socket.emit("joinChat", chatId);
+
     const {
       data: { messages },
-    } = await axios.get(`/chat/messages?chat=${chatId}`);
-    const messageList = document.getElementById("messages");
-    messageList.innerHTML = "";
-    messages.forEach((message) => {
-      const li = document.createElement("li");
-      li.textContent = message.content;
-      messageList.appendChild(li);
+    } = await axios.get(`/chat/messages/${chatId}`);
+
+    const messagesContainer = document.getElementById("messages");
+    messagesContainer.innerHTML = "";
+
+    messages.forEach(({ message, createdBy }) => {
+      const messageContainer = document.createElement("div");
+      messageContainer.className =
+        createdBy === currentUserEmail ? "message-right" : "message-left";
+      messageContainer.textContent = message;
+      messagesContainer.appendChild(messageContainer);
     });
   };
 
-  // Funzione per inviare un messaggio (real-time + salvataggio DB)
-  const sendMessage = async (chatId, content) => {
-    console.log(chatId, content);
-    // Recupera l'utente loggato (puoi migliorare con JWT/cookie)
-    let sender = window.currentUserEmail;
-    console.log(sender);
-
-    if (!sender) {
-      // fallback: prova a ricavare da un meta tag o altro
-      const meta = document.querySelector('meta[name="user-email"]');
-      sender = meta ? meta.content : "anonimo";
-    }
-    socket.emit("sendMessage", { chatId, sender, content });
-    // Mostra subito il messaggio nella lista
-    const messageList = document.getElementById("messages");
-    const li = document.createElement("li");
-    li.textContent = content;
-    messageList.appendChild(li);
-    messageList.scrollTop = messageList.scrollHeight;
-
-    await axios.post("/chat/messages", {
-      message: content,
-    });
-  };
-
-  // Ricezione messaggi in tempo reale
-  socket.on("newMessage", (message) => {
-    console.log(message);
-    if (message.chat === currentChatId) {
-      const messageList = document.getElementById("messages");
-      const li = document.createElement("li");
-      li.textContent = message.content;
-      messageList.appendChild(li);
-      messageList.scrollTop = messageList.scrollHeight;
-    }
+  // Receive messages
+  socket.on("receiveMessage", (data) => {
+    const { message, createdBy } = data;
+    const messageContainer = document.createElement("div");
+    messageContainer.className =
+      createdBy === currentUserEmail ? "message-right" : "message-left";
+    messageContainer.textContent = message;
+    document.getElementById("messages").appendChild(messageContainer);
   });
 
-  //---------------------------------------------------------------------------------------------
-  // LISTENER inputs for searching users
+  // Listener per cercare utenti
   searchInput.addEventListener("input", (event) => {
     const query = event.target.value.trim();
     if (query.length > 1) {
@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // LISTENER to create a new chat
+  // Listener per creare una nuova chat
   createChatForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const email = searchInput.value;
@@ -174,11 +174,10 @@ document.addEventListener("DOMContentLoaded", () => {
       searchInput.value = "";
       searchResults.style.display = "none";
       loadChats(0, "");
-    } else {
     }
   });
 
-  //LISTENER to search a chat
+  // Listener per cercare una chat
   searchChat.addEventListener("input", async (event) => {
     const query = event.target.value.trim();
     if (query !== "") loadChats(1, query);
@@ -192,12 +191,12 @@ document.addEventListener("DOMContentLoaded", () => {
     messageForm.addEventListener("submit", (e) => {
       e.preventDefault();
       if (currentChatId && messageInput.value.trim()) {
-        sendMessage(currentChatId, messageInput.value.trim());
+        sendMessage(messageInput.value.trim());
         messageInput.value = "";
       }
     });
   }
 
-  //---------------------------------------------------------
+  // Carica le chat all'avvio
   loadChats(0, "");
 });

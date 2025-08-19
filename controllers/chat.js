@@ -25,9 +25,14 @@ const getChats = async (req, res) => {
   const chatsCompleted = await Promise.all(
     chats.map(async (chat) => {
       if (!chat.isGroup) {
-        const nameEmail = await User.findOne({ email: chat.members[1] }).select(
-          "name email"
+        //to get the name and email of the other person in the single chat
+        const otherMemberEmail = chat.members.find(
+          (member) => member !== req.user.email
         );
+
+        const nameEmail = await User.findOne({
+          email: otherMemberEmail,
+        }).select("name email");
 
         if (!nameEmail)
           throw new BadRequestError(
@@ -116,30 +121,38 @@ const searchChat = async (req, res) => {
   res.status(StatusCodes.OK).json({ chatsCompleted });
 };
 
-//get all the messages of a specific chat
-const getChatMessages = async (req, res) => {
-  const { chat } = req.query;
-  if (!chat) throw new BadRequestError("Chat ID is required");
+// Save a new message to the database
+const saveMessage = async (req, res) => {
+  const { message, currentChatId } = req.body;
 
-  const chatFound = await Chat.findById(chat);
+  if (!message || !currentChatId) {
+    throw new BadRequestError("Message and chat ID are required");
+  }
 
-  if (!chatFound) throw new BadRequestError("Chat not found");
+  const newMessage = await Message.create({
+    message: message,
+    createdBy: req.user.email,
+    chatAt: currentChatId,
+  });
 
-  const messages = await Message.find({ chat }).sort({ createdAt: 1 });
-
-  res.status(StatusCodes.OK).json({ messages });
+  res.status(StatusCodes.CREATED).json({ newMessage });
 };
 
-// Salva un messaggio (usato per fallback REST, opzionale)
-const saveMessage = async (req, res) => {
-  const { content } = req.body;
-  if (!content) return res.status(400).json({ error: "Content required" });
-  const message = await Message.create({
-    chatAt: chatId,
-    createdBy: req.user.email,
-    message: content,
-  });
-  res.status(200).json({ message });
+// Get all messages for a specific chat
+const getMessages = async (req, res) => {
+  const { chatAt } = req.params;
+
+  if (!chatAt) {
+    throw new BadRequestError("need to provide a chat id");
+  }
+
+  const messages = await Message.find({ chatAt }).sort({ createdAt: 1 });
+
+  if (!messages) {
+    throw new BadRequestError("error during get all messages for a chat");
+  }
+
+  res.status(StatusCodes.OK).json({ messages });
 };
 
 module.exports = {
@@ -147,7 +160,7 @@ module.exports = {
   getChats,
   createChat,
   searchUsers,
-  getChatMessages,
   searchChat,
   saveMessage,
+  getMessages,
 };

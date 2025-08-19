@@ -4,6 +4,8 @@ require("dotenv").config(); //to access data stored in .env file
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const path = require("path");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
 
@@ -21,11 +23,13 @@ const notFound = require("./middleware/notFound");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
 //middlewares
-const authenticateUser = require("./middleware/authentication");
+const auth = require("./middleware/authentication");
 
 //get all the paths
 const authUser = require("./routes/user");
 const chat = require("./routes/chat");
+
+app.use(auth);
 
 //router
 app.use("/", authUser);
@@ -37,32 +41,26 @@ app.use("/chat", chat);
 app.use(notFound);
 app.use(errorHandlerMiddleware);
 
-// SOCKET.IO SETUP
-const http = require("http");
-const server = http.createServer(app);
-const { Server } = require("socket.io");
-const io = new Server(server);
-const Message = require("./models/message");
+const port = process.env.PORT || 3000;
 
-//establish a new connection, under the name "socket"
+// Create HTTP server and integrate Socket.IO
+const server = http.createServer(app);
+const io = new Server(server);
+
+// Socket.IO connection
 io.on("connection", (socket) => {
-  //a client enters the event "joinChat" with the chatId
-  socket.on("joinChat", (chatId) => {
-    socket.join(chatId); //add the socket to that room, so the user can only send messages there
+  console.log("A user connected");
+
+  socket.on("sendMessage", (message) => {
+    // Broadcast the message to all connected clients
+    io.emit("receiveMessage", message);
   });
 
-  //when a client send's a message
-  socket.on("sendMessage", async (data) => {
-    // data: { chatId, sender, content }
-    console.log(data);
-    if (!data.chatId || !data.sender || !data.content) {
-      socket.emit("errorMessage", "Dati messaggio non validi");
-      return;
-    }
+  socket.on("disconnect", () => {
+    console.log("A user disconnected");
   });
 });
 
-const port = process.env.PORT || 3000;
 const start = async () => {
   try {
     await connectDB(process.env.MONGO_URI);

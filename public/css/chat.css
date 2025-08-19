@@ -347,3 +347,23 @@ body {
 .message-list::-webkit-scrollbar-thumb:hover {
   background: #808080; /* Colore più scuro al passaggio del mouse */
 }
+
+.message-right {
+  text-align: right;
+  background-color: #d1e7dd;
+  color: #0f5132;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 10px;
+  align-self: flex-end;
+}
+
+.message-left {
+  text-align: left;
+  background-color: #f8d7da;
+  color: #842029;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 10px;
+  align-self: flex-start;
+}
