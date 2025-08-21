@@ -9,7 +9,6 @@ const { BadRequestError, UnauthenticatedError } = require("../errors");
 const getChatCompleted = async (req, res, val) => {
   const chatsCompleted = await Promise.all(
     val.map(async (chat) => {
-      console.log(chat.members);
       if (!chat.isGroup) {
         //to get the name and email of the other person in the single chat
         const otherMemberEmail = chat.members.find(
@@ -55,7 +54,6 @@ const getChats = async (req, res) => {
   if (!chats) throw new BadRequestError("error getting chats");
 
   const chatsCompleted = await getChatCompleted(req, res, chats);
-  console.log(chatsCompleted);
 
   res.status(StatusCodes.OK).json({ chatsCompleted });
 };

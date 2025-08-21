@@ -69,24 +69,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     chatList.innerHTML = "";
     chatsCompleted.forEach((chat) => {
-      console.log(chat.members);
       const li = document.createElement("li");
       li.className = "chat-item";
       li.dataset.chatId = chat._id;
 
+      //create name element
       const nameElement = document.createElement("div");
       nameElement.className = "chat-name";
       nameElement.textContent = chat.nameEmail?.name || "Chat senza nome";
 
+      //create detail element (email)
       const detailsElement = document.createElement("div");
       detailsElement.className = "chat-details";
+      //if the value email do not exist, then this space will be empty
+      detailsElement.textContent = chat.nameEmail?.email || "";
 
-      if (chat.lastMessage) {
-        detailsElement.textContent = `Ultimo messaggio: ${chat.lastMessage}`;
-      } else if (chat.participants) {
-        detailsElement.textContent = `${chat.participants.length} partecipanti`;
-      } else {
-        detailsElement.textContent = chat.nameEmail?.email || "";
+      //create element for unread messages
+      console.log(chat.members);
+      if (chat.members.numUnreadMessages !== 0) {
+        const unreadMessElement = document.createElement("div");
+        unreadMessElement.className = "unread-count";
       }
 
       li.appendChild(nameElement);
