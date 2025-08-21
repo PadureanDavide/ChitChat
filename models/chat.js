@@ -16,7 +16,14 @@ const ChatSchema = new mongoose.Schema(
     },
     members: [
       {
-        type: String,
+        name: {
+          type: String,
+          required: true,
+        },
+        numUnreadMessages: {
+          type: Number,
+          default: 0,
+        },
       },
     ],
   },

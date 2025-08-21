@@ -5,33 +5,19 @@ const Message = require("../models/message");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
 
-// to get the html chat file
-const chatIndex = async (req, res) => {
-  const chats = await Chat.find({ members: req.user._id });
-
-  if (!chats) throw new BadRequestError("error getting chat.html");
-
-  res
-    .status(StatusCodes.OK)
-    .sendFile(path.join(__dirname, "../public/html", "chat.html"));
-};
-
-//get all personal chats
-const getChats = async (req, res) => {
-  const chats = await Chat.find({ members: req.user.email });
-
-  if (!chats) throw new BadRequestError("error getting chats");
-
+//----------------------------------------------------------------------------
+const getChatCompleted = async (req, res, val) => {
   const chatsCompleted = await Promise.all(
-    chats.map(async (chat) => {
+    val.map(async (chat) => {
+      console.log(chat.members);
       if (!chat.isGroup) {
         //to get the name and email of the other person in the single chat
         const otherMemberEmail = chat.members.find(
-          (member) => member !== req.user.email
+          (member) => member.name !== req.user.email
         );
 
         const nameEmail = await User.findOne({
-          email: otherMemberEmail,
+          email: otherMemberEmail.name,
         }).select("name email");
 
         if (!nameEmail)
@@ -46,6 +32,30 @@ const getChats = async (req, res) => {
       }
     })
   );
+  return chatsCompleted;
+};
+
+//----------------------------------------------------------------------------
+
+// to get the html chat file
+const chatIndex = async (req, res) => {
+  const chats = await Chat.find({ members: req.user._id });
+
+  if (!chats) throw new BadRequestError("error getting chat.html");
+
+  res
+    .status(StatusCodes.OK)
+    .sendFile(path.join(__dirname, "../public/html", "chat.html"));
+};
+
+//get all personal chats
+const getChats = async (req, res) => {
+  const chats = await Chat.find({ "members.name": req.user.email });
+
+  if (!chats) throw new BadRequestError("error getting chats");
+
+  const chatsCompleted = await getChatCompleted(req, res, chats);
+  console.log(chatsCompleted);
 
   res.status(StatusCodes.OK).json({ chatsCompleted });
 };
@@ -55,7 +65,10 @@ const createChat = async (req, res) => {
   if (req.body.emailOther !== req.user.email) {
     const chat = await Chat.create({
       createdBy: req.user._id,
-      members: [req.user.email, req.body.emailOther],
+      members: [
+        { name: req.user.email, numUnreadMessages: 0 },
+        { name: req.body.emailOther, numUnreadMessages: 0 },
+      ],
     });
 
     if (!chat) throw new BadRequestError("error during creating a chat");
@@ -82,7 +95,7 @@ const searchUsers = async (req, res) => {
 const searchChat = async (req, res) => {
   const { chat } = req.query;
 
-  const suppChat = await Chat.find({
+  const chats = await Chat.find({
     $or: [
       {
         isGroup: true,
@@ -90,33 +103,12 @@ const searchChat = async (req, res) => {
       },
       {
         isGroup: false,
-        members: { $regex: chat },
+        "members.name": { $regex: chat },
       },
     ],
   });
 
-  const chatsCompleted = await Promise.all(
-    suppChat.map(async (chat) => {
-      if (!chat.isGroup) {
-        const nameEmail = await User.findOne({ email: chat.members[1] }).select(
-          "name email"
-        );
-
-        if (!nameEmail)
-          throw new BadRequestError(
-            "error when finding name and email of a specific user"
-          );
-
-        return {
-          ...chat.toObject(),
-          nameEmail,
-        };
-      }
-    })
-  );
-
-  if (!chatsCompleted)
-    throw new BadRequestError("error during the search of chats");
+  const chatsCompleted = await getChatCompleted(req, res, chats);
 
   res.status(StatusCodes.OK).json({ chatsCompleted });
 };
@@ -155,6 +147,26 @@ const getMessages = async (req, res) => {
   res.status(StatusCodes.OK).json({ messages });
 };
 
+//increment unread messages cont
+const incUnreadMess = async (req, res) => {
+  const { chatId } = req.params;
+
+  if (!chatId) throw new BadRequestError("a param must be provided");
+
+  const chat = await Chat.findById(chatId);
+  if (!chat) throw new BadRequestError("chat not found");
+
+  chat.members.forEach((member) => {
+    if (member.name !== req.user.email) {
+      member.numUnreadMessages += 1;
+    }
+  });
+
+  await chat.save();
+
+  res.status(StatusCodes.OK).json({ success: true });
+};
+
 module.exports = {
   chatIndex,
   getChats,
@@ -163,4 +175,5 @@ module.exports = {
   searchChat,
   saveMessage,
   getMessages,
+  incUnreadMess,
 };

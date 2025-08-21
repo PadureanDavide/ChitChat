@@ -69,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     chatList.innerHTML = "";
     chatsCompleted.forEach((chat) => {
+      console.log(chat.members);
       const li = document.createElement("li");
       li.className = "chat-item";
       li.dataset.chatId = chat._id;
@@ -91,10 +92,16 @@ document.addEventListener("DOMContentLoaded", () => {
       li.appendChild(nameElement);
       li.appendChild(detailsElement);
 
-      li.addEventListener("click", () => {
+      li.addEventListener("click", (e) => {
         document.querySelectorAll(".chat-list li").forEach((item) => {
           item.classList.remove("selected");
         });
+
+        //remove the unread-count if it exists
+        const unreadCount = document.querySelector(".unread-count");
+        if (unreadCount) {
+          unreadCount.remove();
+        }
         li.classList.add("selected");
         loadMessages(chat._id);
       });
@@ -148,7 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // Receive messages
-  socket.on("receiveMessage", (data) => {
+  socket.on("receiveMessage", async (data) => {
     if (data.currentChatId === currentChatId) {
       const { message, createdBy } = data;
       const messageContainer = document.createElement("div");
@@ -158,6 +165,31 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("messages").appendChild(messageContainer);
 
       scrollToBottom();
+
+      //to increment the unread messages for every one in the chat except the emitter
+      await axios.patch(`/chat/unreadCont/${data.currentChatId}`);
+    } else {
+      //ONLY IF THE USER IS ONLINE
+      // Increment unread message count for the chat
+      const chatItem = document.querySelector(
+        `li.chat-item[data-chat-id="${data.currentChatId}"]`
+      );
+
+      if (chatItem) {
+        let unreadCount = chatItem.querySelector(".unread-count");
+
+        if (!unreadCount) {
+          unreadCount = document.createElement("span");
+          unreadCount.className = "unread-count";
+          unreadCount.textContent = "1";
+
+          // Aggiungi il numerino accanto al nome della chat
+          chatItem.appendChild(unreadCount);
+        } else {
+          // Incrementa il contatore esistente
+          unreadCount.textContent = parseInt(unreadCount.textContent) + 1;
+        }
+      }
     }
   });
 
