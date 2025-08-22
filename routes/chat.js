@@ -9,6 +9,7 @@ const {
   saveMessage,
   getMessages,
   incUnreadMess,
+  removeUnreadMess,
 } = require("../controllers/chat");
 
 router.route("/").get(chatIndex);
@@ -17,6 +18,7 @@ router.route("/getChats").get(getChats);
 router.route("/searchUsers").get(searchUsers);
 router.route("/searchChats").get(searchChat);
 router.route("/unreadCont/:chatId").patch(incUnreadMess);
+router.route("/removeUnreadMess/:chatId").patch(removeUnreadMess);
 
 // Salva un messaggio (REST fallback, opzionale)
 router.route("/messages").post(saveMessage);

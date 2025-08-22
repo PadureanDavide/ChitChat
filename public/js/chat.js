@@ -2,6 +2,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentChatId = null;
   let currentUserEmail = null;
 
+  let unreadMessElement = null;
+
   const chatList = document.getElementById("chats");
   const searchInput = document.getElementById("create-chat-input");
   const searchChat = document.getElementById("search-chat-input");
@@ -84,28 +86,37 @@ document.addEventListener("DOMContentLoaded", () => {
       //if the value email do not exist, then this space will be empty
       detailsElement.textContent = chat.nameEmail?.email || "";
 
-      //create element for unread messages
-      console.log(chat.members);
-      if (chat.members.numUnreadMessages !== 0) {
-        const unreadMessElement = document.createElement("div");
-        unreadMessElement.className = "unread-count";
-      }
-
       li.appendChild(nameElement);
       li.appendChild(detailsElement);
 
-      li.addEventListener("click", (e) => {
+      //create element for unread messages
+      const returnUser = chat.members.find(
+        (user) => user.name === currentUserEmail
+      );
+
+      //check if the result is empty and if are any messages unread
+      if (returnUser && returnUser.numUnreadMessages !== 0) {
+        unreadMessElement = document.createElement("div");
+        unreadMessElement.className = "unread-count";
+        unreadMessElement.textContent = returnUser.numUnreadMessages;
+        li.appendChild(unreadMessElement);
+      }
+
+      li.addEventListener("click", async (e) => {
         document.querySelectorAll(".chat-list li").forEach((item) => {
           item.classList.remove("selected");
         });
 
+        //load first the chat, and the currentChatId will be setted in the function called
+        loadMessages(chat._id);
+
         //remove the unread-count if it exists
-        const unreadCount = document.querySelector(".unread-count");
-        if (unreadCount) {
-          unreadCount.remove();
+        unreadMessElement = document.querySelector(".unread-count");
+        if (unreadMessElement) {
+          unreadMessElement.remove();
+          await axios.patch(`/chat/removeUnreadMess/${currentChatId}`);
         }
         li.classList.add("selected");
-        loadMessages(chat._id);
       });
 
       chatList.appendChild(li);

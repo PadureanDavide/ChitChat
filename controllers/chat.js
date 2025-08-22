@@ -165,6 +165,32 @@ const incUnreadMess = async (req, res) => {
   res.status(StatusCodes.OK).json({ success: true });
 };
 
+const removeUnreadMess = async (req, res) => {
+  const { chatId } = req.params;
+
+  const result = await Chat.findOneAndUpdate(
+    {
+      _id: chatId,
+      "members.name": req.user.email,
+    },
+    {
+      $set: {
+        "members.$.numUnreadMessages": 0,
+      },
+    },
+    {
+      new: true, // Restituisce il documento aggiornato
+    }
+  );
+
+  if (!result)
+    throw new BadRequestError(
+      "error during the down grade to 0 for the unreadmessages"
+    );
+
+  res.status(StatusCodes.OK).json({ success: true });
+};
+
 module.exports = {
   chatIndex,
   getChats,
@@ -174,4 +200,5 @@ module.exports = {
   saveMessage,
   getMessages,
   incUnreadMess,
+  removeUnreadMess,
 };
