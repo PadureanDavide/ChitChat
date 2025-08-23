@@ -9,6 +9,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchChat = document.getElementById("search-chat-input");
   const searchResults = document.getElementById("search-results");
   const createChatForm = document.getElementById("create-chat-form");
+  const contCurrentChat = document.querySelector(".message-column");
+
+  const sendMessageForm = `<form id="message-form" class="message-form">
+              <input type="text" id="message-input" placeholder="Scrivi un messaggio..." required="">
+              <button type="submit" class="send-btn">
+                <i class="fas fa-paper-plane"></i> Invia
+              </button>
+            </form>`;
 
   // Fetch the current user's email via Axios
   const fetchUserEmail = async () => {
@@ -164,6 +172,8 @@ document.addEventListener("DOMContentLoaded", () => {
       messagesContainer.appendChild(messageContainer);
     });
 
+    if (!contCurrentChat.querySelector("#message-form"))
+      contCurrentChat.innerHTML += sendMessageForm;
     scrollToBottom();
   };
 
@@ -247,6 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (messageForm && messageInput) {
     messageForm.addEventListener("submit", (e) => {
       e.preventDefault();
+      console.log("caio");
       if (currentChatId && messageInput.value.trim()) {
         sendMessage(messageInput.value.trim());
         messageInput.value = "";

@@ -159,13 +159,6 @@ body {
   margin-bottom: 18px;
 }
 
-#chat-title {
-  margin: 0;
-  font-size: 1.5rem;
-  color: var(--primary-color);
-  font-weight: 700;
-}
-
 .message-list {
   list-style: none;
   padding: 0;
