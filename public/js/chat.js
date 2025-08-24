@@ -9,14 +9,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchChat = document.getElementById("search-chat-input");
   const searchResults = document.getElementById("search-results");
   const createChatForm = document.getElementById("create-chat-form");
-  const contCurrentChat = document.querySelector(".message-column");
+  const messageForm = document.getElementById("message-form");
+  const messageInput = document.getElementById("message-input");
 
-  const sendMessageForm = `<form id="message-form" class="message-form">
-              <input type="text" id="message-input" placeholder="Scrivi un messaggio..." required="">
-              <button type="submit" class="send-btn">
-                <i class="fas fa-paper-plane"></i> Invia
-              </button>
-            </form>`;
+  const socket = io();
 
   // Fetch the current user's email via Axios
   const fetchUserEmail = async () => {
@@ -66,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Carica tutte le chat personali
+  //load all the personal chats
   const loadChats = async (num, val) => {
     let chatsCompleted;
     if (num === 0) {
@@ -110,6 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
         li.appendChild(unreadMessElement);
       }
 
+      //add a eventlistener for every chat loaded
       li.addEventListener("click", async (e) => {
         document.querySelectorAll(".chat-list li").forEach((item) => {
           item.classList.remove("selected");
@@ -131,8 +128,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  const socket = io();
-
   // Send a message
   const sendMessage = async (message) => {
     // Save message to the database
@@ -152,11 +147,14 @@ document.addEventListener("DOMContentLoaded", () => {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   };
 
-  // Funzione unificata per caricare i messaggi
+  //function called when a chat is cliked, so all the messages for that chat will be displayed
   const loadMessages = async (chatId) => {
     currentChatId = chatId;
+
+    //to connect to the communication channel
     socket.emit("joinChat", chatId);
 
+    //get all the messages
     const {
       data: { messages },
     } = await axios.get(`/chat/messages/${chatId}`);
@@ -164,6 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const messagesContainer = document.getElementById("messages");
     messagesContainer.innerHTML = "";
 
+    //display every message
     messages.forEach(({ message, createdBy }) => {
       const messageContainer = document.createElement("div");
       messageContainer.className =
@@ -172,8 +171,10 @@ document.addEventListener("DOMContentLoaded", () => {
       messagesContainer.appendChild(messageContainer);
     });
 
-    if (!contCurrentChat.querySelector("#message-form"))
-      contCurrentChat.innerHTML += sendMessageForm;
+    if (messageForm.classList.contains("hide-form-sender"))
+      messageForm.classList.remove("hide-form-sender");
+
+    //to position the view on the last message of the chat
     scrollToBottom();
   };
 
@@ -212,6 +213,12 @@ document.addEventListener("DOMContentLoaded", () => {
           // Incrementa il contatore esistente
           unreadCount.textContent = parseInt(unreadCount.textContent) + 1;
         }
+      }
+
+      // to move up the chat that got a increment in the unread message counter
+      const chatList = document.getElementById("chats");
+      if (chatList && chatItem.parentNode === chatList) {
+        chatList.insertBefore(chatItem, chatList.firstChild);
       }
     }
   });
@@ -252,12 +259,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Invio messaggio dal form
-  const messageForm = document.getElementById("message-form");
-  const messageInput = document.getElementById("message-input");
+
   if (messageForm && messageInput) {
     messageForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      console.log("caio");
       if (currentChatId && messageInput.value.trim()) {
         sendMessage(messageInput.value.trim());
         messageInput.value = "";

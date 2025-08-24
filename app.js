@@ -23,13 +23,10 @@ const notFound = require("./middleware/notFound");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
 //middlewares
-const auth = require("./middleware/authentication");
 
 //get all the paths
 const authUser = require("./routes/user");
 const chat = require("./routes/chat");
-
-app.use(auth);
 
 //router
 app.use("/", authUser);

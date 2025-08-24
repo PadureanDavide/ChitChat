@@ -12,6 +12,10 @@ const {
   removeUnreadMess,
 } = require("../controllers/chat");
 
+const auth = require("../middleware/authentication");
+
+router.use(auth);
+
 router.route("/").get(chatIndex);
 router.route("/createChat").post(createChat);
 router.route("/getChats").get(getChats);

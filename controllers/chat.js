@@ -49,7 +49,9 @@ const chatIndex = async (req, res) => {
 
 //get all personal chats
 const getChats = async (req, res) => {
-  const chats = await Chat.find({ "members.name": req.user.email });
+  const chats = await Chat.find({ "members.name": req.user.email }).sort({
+    updatedAt: -1,
+  }); //to order them based on the updatedAt value (last updated first)
 
   if (!chats) throw new BadRequestError("error getting chats");
 
@@ -165,6 +167,7 @@ const incUnreadMess = async (req, res) => {
   res.status(StatusCodes.OK).json({ success: true });
 };
 
+//remove the unread counter from the database
 const removeUnreadMess = async (req, res) => {
   const { chatId } = req.params;
 

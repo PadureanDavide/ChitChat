@@ -2,47 +2,68 @@ const User = require("../models/user");
 const { UnauthenticatedError } = require("../errors");
 const { createJWTAccess, verifyToken } = require("../utils/generateTokens");
 
+const checkCookie = async (req, token) => {
+  if (!token) return false;
+
+  //try catch used to catch a error in verfy token (means the token is invalid)
+  try {
+    const decoded = verifyToken(token);
+    const user = await User.findById(decoded.userId).select("-password");
+
+    if (!user) return false;
+
+    //add the user to the request
+    req.user = user;
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
+//-----------------------------------------------------------------------------------
 const auth = async (req, res, next) => {
   const tokenAccess = req.cookies.jwtAccess;
   const tokenRefresh = req.cookies.jwtRefresh;
-  let user;
 
-  if (!tokenRefresh) res.redirect("/login");
+  var hasValidRefresh = null;
 
-  // Verifica access token
-  try {
-    var decoded = verifyToken(tokenAccess);
-    user = await User.findById(decoded.userId).select(
-      "-password -refreshTokens"
-    );
-    if (!user) throw new UnauthenticatedError("Utente non trovato");
-    req.user = user;
-    next();
-  } catch (err) {
-    // Se access token non valido, prova refresh token
-    try {
-      decoded = verifyToken(tokenRefresh);
-      user = await User.findById(decoded.userId).select("-password");
-      if (!user || !user.refreshTokens.includes(tokenRefresh))
-        throw new UnauthenticatedError("Refresh token non valido");
+  const publicPaths = ["/login", "/register"];
 
-      // Genera nuovo access token
-      const newAccessToken = createJWTAccess(user._id, user.name);
-      res.cookie("jwtAccess", newAccessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        maxAge: 60 * 60 * 1000,
-      });
-      req.user = user;
-      next();
-    } catch (err2) {
-      // Se anche il refresh token non va, reindirizza a login
-      // Puoi loggare l'errore se vuoi
-      // console.error(err2);
-      res.redirect("/login");
+  // check if the path is public
+  if (publicPaths.includes(req.path)) {
+    // check if the cookies contains something
+    if (tokenAccess && tokenRefresh) {
+      hasValidRefresh = await checkCookie(req, tokenRefresh);
+
+      if ((await checkCookie(req, tokenAccess)) && hasValidRefresh) {
+        return res.redirect("/chat");
+      }
     }
+    return next();
   }
+
+  // for protected paths
+  //need to check the access token
+  hasValidRefresh = await checkCookie(req, tokenRefresh);
+  if ((await checkCookie(req, tokenAccess)) && hasValidRefresh) {
+    return next();
+  }
+
+  // if the access token is invalid, then check only the refresh token
+  //if it is, then update the cookie access and continue with the code
+  if (hasValidRefresh) {
+    newAccessToken = createJWTAccess(req.user._id, req.user.name);
+    res.cookie("jwtAccess", newAccessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 60 * 60 * 1000,
+    });
+    return next();
+  }
+
+  //if any token is valid, then go back to /login
+  return res.redirect("/login");
 };
 
 module.exports = auth;
