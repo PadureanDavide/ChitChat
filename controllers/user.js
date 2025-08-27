@@ -86,7 +86,27 @@ const login = async (req, res) => {
 };
 
 //-------------------------------------------------------
+//get all users
+const getAllUsers = async (req, res) => {
+  //select all users exept myself
+  const users = await User.find({ email: { $ne: req.user.email } }).select(
+    "email name"
+  );
+
+  if (!users) throw new BadRequestError("error during getting all the users");
+
+  res.status(StatusCodes.OK).json({ users });
+};
+
+//-------------------------------------------------------
 //logout
 const logout = async (req, res) => {};
 
-module.exports = { loginIndex, login, registerIndex, register, getEmail };
+module.exports = {
+  loginIndex,
+  login,
+  registerIndex,
+  register,
+  getEmail,
+  getAllUsers,
+};

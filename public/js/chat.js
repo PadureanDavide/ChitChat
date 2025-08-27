@@ -4,6 +4,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let unreadMessElement = null;
 
+  //instead of an array, we use Set, because we can store only elements that have differences amongs them
+  //and it has also the delete AND has functions
+  let selectedUsers = new Set();
+
+  const popUp = document.querySelector(".popUpNewChat");
+  const usersList = document.querySelector(".users-list");
+  const openPopUp = document.querySelector("#plusButton");
+  const closePopUp = document.querySelector(".popup-close");
+
   const chatList = document.getElementById("chats");
   const searchInput = document.getElementById("create-chat-input");
   const searchChat = document.getElementById("search-chat-input");
@@ -13,6 +22,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const messageInput = document.getElementById("message-input");
 
   const socket = io();
+
+  //-----------------------------------------------------------
+  //update the local array and the UI
+
+  //-----------------------------------------------------------
 
   // Fetch the current user's email via Axios
   const fetchUserEmail = async () => {
@@ -223,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  //---------------------------------------------------------------------------------------------------------------------
   // Listener per cercare utenti
   searchInput.addEventListener("input", (event) => {
     const query = event.target.value.trim();
@@ -259,7 +274,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Invio messaggio dal form
-
   if (messageForm && messageInput) {
     messageForm.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -270,6 +284,116 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Carica le chat all'avvio
+  //event listener to open the pop up
+  openPopUp.addEventListener("click", async (e) => {
+    popUp.classList.add("openPopUp");
+    usersList.innerHTML = "";
+
+    //get all users
+    const {
+      data: { users },
+    } = await axios.get("/getAllUsers");
+
+    //display all the users
+    users.forEach((user) => {
+      // Crea l'elemento principale
+      const userItem = document.createElement("div");
+      userItem.className = "user-item";
+
+      // Crea il checkbox
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "user-checkbox";
+
+      // Crea il label
+      const label = document.createElement("label");
+      label.htmlFor = `${user.email}`;
+
+      // Crea l'avatar
+      const avatar = document.createElement("span");
+      avatar.className = "user-avatar";
+      avatar.innerHTML = '<i class="fas fa-user"></i>';
+
+      // Crea il container delle info
+      const userInfo = document.createElement("span");
+      userInfo.className = "user-info";
+
+      // Crea il nome utente
+      const userName = document.createElement("span");
+      userName.className = "user-name";
+      userName.textContent = user.name || "Nome non disponibile";
+
+      // Crea l'email utente
+      const userEmail = document.createElement("span");
+      userEmail.className = "user-email";
+      userEmail.textContent = user.email;
+
+      // Assembla le info
+      userInfo.appendChild(userName);
+      userInfo.appendChild(userEmail);
+
+      // Assembla il label
+      label.appendChild(avatar);
+      label.appendChild(userInfo);
+
+      // Crea l'icona aggiungi
+      const addIcon = document.createElement("span");
+      addIcon.className = "user-add-icon";
+      addIcon.innerHTML = '<i class="fas fa-plus-circle"></i>';
+
+      // Assembla tutto nell'elemento principale
+      userItem.appendChild(checkbox);
+      userItem.appendChild(label);
+      userItem.appendChild(addIcon);
+      usersList.appendChild(userItem);
+
+      const updateSelection = () => {
+        if (checkbox.checked) {
+          checkbox.checked = true;
+          selectedUsers.add(user.email);
+        } else {
+          checkbox.checked = false;
+          selectedUsers.delete(user.email);
+        }
+
+        if (selectedUsers.size !== 0) {
+          console.log("dentro");
+        }
+      };
+
+      //------------------------------------------------------
+      addIcon.addEventListener("click", (event) => {
+        popUp.classList.remove("openPopUp");
+        event.stopPropagation();
+      });
+
+      //------------------------------------------------------
+      checkbox.addEventListener("click", (event) => {
+        updateSelection();
+        event.stopPropagation();
+      });
+
+      userItem.addEventListener("click", (event) => {
+        // Evita doppia esecuzione per checkbox e addIcon
+        if (
+          event.target === checkbox ||
+          event.target.closest(".user-add-icon")
+        ) {
+          return;
+        }
+
+        // need to invert manually because you click on the div and not directly on the checkbox
+        checkbox.checked = !checkbox.checked;
+        updateSelection();
+      });
+    });
+  });
+
+  //event listener to close the popup
+  closePopUp.addEventListener("click", (e) => {
+    popUp.classList.remove("openPopUp");
+  });
+
+  // load the chats at every refresh page
   loadChats(0, "");
 });

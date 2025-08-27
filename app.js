@@ -23,6 +23,8 @@ const notFound = require("./middleware/notFound");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
 //middlewares
+const auth = require("./middleware/authentication");
+app.use(auth);
 
 //get all the paths
 const authUser = require("./routes/user");

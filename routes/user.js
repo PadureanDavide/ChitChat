@@ -6,14 +6,12 @@ const {
   registerIndex,
   register,
   getEmail,
+  getAllUsers,
 } = require("../controllers/user");
-
-const auth = require("../middleware/authentication");
-
-router.use(auth);
 
 router.route("/register").get(registerIndex).post(register);
 router.route("/login").get(loginIndex).post(login);
 router.route("/getEmail").get(getEmail);
+router.route("/getAllUsers").get(getAllUsers);
 
 module.exports = router;

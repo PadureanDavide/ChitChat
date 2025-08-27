@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Le mie Chat</title>
-    <!-- Inserisci qui l'email dell'utente loggato -->
     <meta name="user-email" content="{{USER_EMAIL}}" />
     <link rel="stylesheet" href="/css/chat.css" />
     <link
@@ -18,6 +17,115 @@
   </head>
   <body>
     <div class="chat-card">
+      <!-- POPUP PER CREAZIONE CHAT DI GRUPPO -->
+      <div class="popUpNewChat">
+        <div class="popup-header">
+          <h3>Crea Nuova Chat di Gruppo</h3>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="30"
+            height="30"
+            viewBox="0 0 24 24"
+            class="popup-close"
+          >
+            <path
+              fill="#a259c6"
+              d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"
+            />
+          </svg>
+        </div>
+
+        <div class="users-list-container">
+          <h4>Seleziona partecipanti:</h4>
+          <div class="users-list">
+            <!-- Lista utenti statica (da popolare dinamicamente in produzione) -->
+            <div class="user-item">
+              <input type="checkbox" id="user1" class="user-checkbox" />
+              <label for="user1">
+                <span class="user-avatar"><i class="fas fa-user"></i></span>
+                <span class="user-info">
+                  <span class="user-name">Mario Rossi</span>
+                  <span class="user-email">mario.rossi@example.com</span>
+                </span>
+              </label>
+              <span class="user-add-icon"
+                ><i class="fas fa-plus-circle"></i
+              ></span>
+            </div>
+
+            <div class="user-item">
+              <input type="checkbox" id="user2" class="user-checkbox" />
+              <label for="user2">
+                <span class="user-avatar"><i class="fas fa-user"></i></span>
+                <span class="user-info">
+                  <span class="user-name">Luigi Verdi</span>
+                  <span class="user-email">luigi.verdi@example.com</span>
+                </span>
+              </label>
+              <span class="user-add-icon"
+                ><i class="fas fa-plus-circle"></i
+              ></span>
+            </div>
+
+            <div class="user-item">
+              <input type="checkbox" id="user3" class="user-checkbox" />
+              <label for="user3">
+                <span class="user-avatar"><i class="fas fa-user"></i></span>
+                <span class="user-info">
+                  <span class="user-name">Giulia Bianchi</span>
+                  <span class="user-email">giulia.bianchi@example.com</span>
+                </span>
+              </label>
+              <span class="user-add-icon"
+                ><i class="fas fa-plus-circle"></i
+              ></span>
+            </div>
+
+            <div class="user-item">
+              <input type="checkbox" id="user4" class="user-checkbox" />
+              <label for="user4">
+                <span class="user-avatar"><i class="fas fa-user"></i></span>
+                <span class="user-info">
+                  <span class="user-name">Anna Neri</span>
+                  <span class="user-email">anna.neri@example.com</span>
+                </span>
+              </label>
+              <span class="user-add-icon"
+                ><i class="fas fa-plus-circle"></i
+              ></span>
+            </div>
+
+            <div class="user-item">
+              <input type="checkbox" id="user5" class="user-checkbox" />
+              <label for="user5">
+                <span class="user-avatar"><i class="fas fa-user"></i></span>
+                <span class="user-info">
+                  <span class="user-name">Paolo Gialli</span>
+                  <span class="user-email">paolo.gialli@example.com</span>
+                </span>
+              </label>
+              <span class="user-add-icon"
+                ><i class="fas fa-plus-circle"></i
+              ></span>
+            </div>
+          </div>
+        </div>
+
+        <form id="create-chat-form" class="create-chat-form">
+          <input
+            name="nameNewChat"
+            type="text"
+            id="create-chat-input"
+            placeholder="Nome della chat di gruppo..."
+            required
+          />
+          <button type="submit" class="create-btn">
+            <i class="fas fa-plus"></i> Crea chat
+          </button>
+        </form>
+      </div>
+
+      <!-- RESTO DEL CODICE ESISTENTE -->
       <div class="chat-header">
         <h1><i class="fas fa-comments"></i> RealTimeChat</h1>
       </div>
@@ -30,19 +138,19 @@
               placeholder="Cerca chat..."
             />
           </form>
-          <form id="create-chat-form" class="create-chat-form">
-            <input
-              name="nameNewChat"
-              type="text"
-              id="create-chat-input"
-              placeholder="Nome nuova chat..."
-              required
+          <svg
+            id="plusButton"
+            xmlns="http://www.w3.org/2000/svg"
+            width="30"
+            height=" 30"
+            fill="var(--primary-color)"
+            class="bi bi-plus-circle-fill"
+            viewBox="0 0 16 16"
+          >
+            <path
+              d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z"
             />
-            <button type="submit" class="create-btn">
-              <i class="fas fa-plus"></i> Crea
-            </button>
-            <div id="search-results" class="search-results"></div>
-          </form>
+          </svg>
         </div>
         <div class="chat-main">
           <div class="chat-list-column">
@@ -57,7 +165,7 @@
                 type="text"
                 id="message-input"
                 placeholder="Scrivi un messaggio..."
-                required=""
+                required
               />
               <button type="submit" class="send-btn">
                 <i class="fas fa-paper-plane"></i> Invia
