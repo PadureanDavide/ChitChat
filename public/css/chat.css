@@ -501,7 +501,7 @@ body {
   height: auto;
 }
 
-.create-btn {
+.impossible-create-btn {
   pointer-events: none; /* Disabilita i click */
   user-select: none; /* Disabilita la selezione testo */
   opacity: 0.6; /* Rendilo trasparente */

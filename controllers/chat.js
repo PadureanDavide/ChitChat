@@ -62,19 +62,34 @@ const getChats = async (req, res) => {
 
 //create a new chat
 const createChat = async (req, res) => {
-  if (req.body.emailOther !== req.user.email) {
-    const chat = await Chat.create({
-      createdBy: req.user._id,
-      members: [
-        { name: req.user.email, numUnreadMessages: 0 },
-        { name: req.body.emailOther, numUnreadMessages: 0 },
-      ],
-    });
+  if (!req.body.isGroup) {
+    const chatExists = await Chat.findOne({
+      isGroup: false,
+      "members.name": req.body.emailOther,
+    }).select("_id");
 
-    if (!chat) throw new BadRequestError("error during creating a chat");
-    res.status(StatusCodes.OK).json({ success: true });
+    //if the chat exists, then execute only the res
+    if (chatExists) {
+      res
+        .status(StatusCodes.OK)
+        .json({ success: true, exists: true, _id: chatExists._id });
+    } else {
+      //only if the chat do not exist
+      const chat = await Chat.create({
+        createdBy: req.user._id,
+        members: [
+          { name: req.user.email, numUnreadMessages: 0 },
+          { name: req.body.emailOther, numUnreadMessages: 0 },
+        ],
+      });
+
+      if (!chat) throw new BadRequestError("error during creating a chat");
+
+      res.status(StatusCodes.OK).json({ success: true, exists: false });
+    }
+  } else {
+    //to create group IN THE NEXT EPISODE
   }
-  res.status(StatusCodes.OK).json({ success: false });
 };
 
 //search users to create a new chat with

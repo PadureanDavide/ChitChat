@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const usersList = document.querySelector(".users-list");
   const openPopUp = document.querySelector("#plusButton");
   const closePopUp = document.querySelector(".popup-close");
+  const createButton = document.querySelector(".create-btn");
 
   const chatList = document.getElementById("chats");
   const searchInput = document.getElementById("create-chat-input");
@@ -91,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chatsCompleted.forEach((chat) => {
       const li = document.createElement("li");
       li.className = "chat-item";
-      li.dataset.chatId = chat._id;
+      li.id = chat._id;
 
       //create name element
       const nameElement = document.createElement("div");
@@ -210,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
       //ONLY IF THE USER IS ONLINE
       // Increment unread message count for the chat
       const chatItem = document.querySelector(
-        `li.chat-item[data-chat-id="${data.currentChatId}"]`
+        `li.chat-item[id="${data.currentChatId}"]`
       );
 
       if (chatItem) {
@@ -357,13 +358,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (selectedUsers.size !== 0) {
-          console.log("dentro");
+          if (createButton.classList.contains("impossible-create-btn"))
+            createButton.classList.remove("impossible-create-btn");
+        } else {
+          if (!createButton.classList.contains("impossible-create-btn"))
+            createButton.classList.add("impossible-create-btn");
         }
       };
 
       //------------------------------------------------------
-      addIcon.addEventListener("click", (event) => {
+      addIcon.addEventListener("click", async (event) => {
         popUp.classList.remove("openPopUp");
+
+        const {
+          data: { success, exists, _id },
+        } = await axios.post("/chat/createChat", {
+          emailOther: user.email,
+          isGroup: false,
+        });
+
+        if (success) {
+          if (exists) {
+            loadMessages(_id);
+          }
+
+          //to clear what was left in it
+          searchInput.value = "";
+          loadChats(0, "");
+        }
         event.stopPropagation();
       });
 
