@@ -28,6 +28,16 @@ document.addEventListener("DOMContentLoaded", () => {
   //update the local array and the UI
 
   //-----------------------------------------------------------
+  //set the impossible button based on how many elements the selectedUsers has
+  const chageImpossibleButton = () => {
+    if (selectedUsers.size !== 0) {
+      if (createButton.classList.contains("impossible-create-btn"))
+        createButton.classList.remove("impossible-create-btn");
+    } else {
+      if (!createButton.classList.contains("impossible-create-btn"))
+        createButton.classList.add("impossible-create-btn");
+    }
+  };
 
   // Fetch the current user's email via Axios
   const fetchUserEmail = async () => {
@@ -97,16 +107,30 @@ document.addEventListener("DOMContentLoaded", () => {
       //create name element
       const nameElement = document.createElement("div");
       nameElement.className = "chat-name";
-      nameElement.textContent = chat.nameEmail?.name || "Chat senza nome";
+      nameElement.textContent = chat.nameChat || "Chat senza nome";
 
-      //create detail element (email)
-      const detailsElement = document.createElement("div");
-      detailsElement.className = "chat-details";
-      //if the value email do not exist, then this space will be empty
-      detailsElement.textContent = chat.nameEmail?.email || "";
+      if (chat.isGroup) {
+        //create name element
+        const nameElement = document.createElement("div");
+        nameElement.className = "chat-name";
+        nameElement.textContent = chat.nameChat || "Chat senza nome";
 
-      li.appendChild(nameElement);
-      li.appendChild(detailsElement);
+        li.appendChild(nameElement);
+      } else {
+        //create name element
+        const nameElement = document.createElement("div");
+        nameElement.className = "chat-name";
+        nameElement.textContent = chat.nameEmail?.name || "Chat senza nome";
+
+        //create detail element (email)
+        const detailsElement = document.createElement("div");
+        detailsElement.className = "chat-details";
+        //if the value email do not exist, then this space will be empty
+        detailsElement.textContent = chat.nameEmail?.email || "";
+
+        li.appendChild(nameElement);
+        li.appendChild(detailsElement);
+      }
 
       //create element for unread messages
       const returnUser = chat.members.find(
@@ -239,32 +263,21 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   //---------------------------------------------------------------------------------------------------------------------
-  // Listener per cercare utenti
-  searchInput.addEventListener("input", (event) => {
-    const query = event.target.value.trim();
-    if (query.length > 1) {
-      searchUsers(query);
-    } else {
-      searchResults.style.display = "none";
-    }
-  });
 
   // Listener per creare una nuova chat
   createChatForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const email = searchInput.value;
+    const nameGroup = searchInput.value;
+
+    selectedUsers.add(currentUserEmail);
 
     const {
       data: { success },
     } = await axios.post("/chat/createChat", {
-      emailOther: email,
+      name: nameGroup,
+      isGroup: true,
+      membersToAdd: Array.from(selectedUsers),
     });
-
-    if (success) {
-      searchInput.value = "";
-      searchResults.style.display = "none";
-      loadChats(0, "");
-    }
   });
 
   // Listener per cercare una chat
@@ -357,13 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
           selectedUsers.delete(user.email);
         }
 
-        if (selectedUsers.size !== 0) {
-          if (createButton.classList.contains("impossible-create-btn"))
-            createButton.classList.remove("impossible-create-btn");
-        } else {
-          if (!createButton.classList.contains("impossible-create-btn"))
-            createButton.classList.add("impossible-create-btn");
-        }
+        chageImpossibleButton();
       };
 
       //------------------------------------------------------
@@ -378,13 +385,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (success) {
-          if (exists) {
-            loadMessages(_id);
-          }
+          //load the messages even if the chat was just created
+          loadMessages(_id);
 
           //to clear what was left in it
           searchInput.value = "";
-          loadChats(0, "");
+
+          selectedUsers.clear(); //delete all the elements
+          chageImpossibleButton(); //to restore the impoossible button
+
+          //only if the chat wasn't already created
+          if (!exists) loadChats(0, "");
         }
         event.stopPropagation();
       });
@@ -414,6 +425,9 @@ document.addEventListener("DOMContentLoaded", () => {
   //event listener to close the popup
   closePopUp.addEventListener("click", (e) => {
     popUp.classList.remove("openPopUp");
+
+    selectedUsers.clear(); //delete all the elements
+    chageImpossibleButton(); //to restore the impoossible button
   });
 
   // load the chats at every refresh page

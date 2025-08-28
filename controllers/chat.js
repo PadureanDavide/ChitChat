@@ -28,9 +28,12 @@ const getChatCompleted = async (req, res, val) => {
           ...chat.toObject(),
           nameEmail,
         };
+      } else {
+        return chat.toObject();
       }
     })
   );
+
   return chatsCompleted;
 };
 
@@ -89,6 +92,23 @@ const createChat = async (req, res) => {
     }
   } else {
     //to create group IN THE NEXT EPISODE
+
+    const members = req.body.membersToAdd.map((email) => ({
+      name: email, // Usa l'email come nome, oppure potresti voler cercare il nome utente
+      numUnreadMessages: 0,
+    }));
+
+    const chat = await Chat.create({
+      createdBy: req.user._id,
+      isGroup: true,
+      nameChat: req.body.name,
+      members: members,
+    });
+
+    if (!chat)
+      throw new BadRequestError("error during the creation of a new group");
+
+    res.status(StatusCodes.OK).json({ success: true });
   }
 };
 
