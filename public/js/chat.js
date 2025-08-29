@@ -147,25 +147,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
       //add a eventlistener for every chat loaded
       li.addEventListener("click", async (e) => {
-        document.querySelectorAll(".chat-list li").forEach((item) => {
-          item.classList.remove("selected");
-        });
-
-        //load first the chat, and the currentChatId will be setted in the function called
-        loadMessages(chat._id);
-
-        //remove the unread-count if it exists
-        unreadMessElement = li.querySelector(".unread-count");
-        if (unreadMessElement) {
-          console.log(currentChatId);
-          unreadMessElement.remove();
-          await axios.patch(`/chat/removeUnreadMess/${currentChatId}`);
-        }
-        li.classList.add("selected");
+        handleChatSelection(chat._id, li);
       });
 
       chatList.appendChild(li);
     });
+  };
+
+  //handle the change of the selected chat
+  const handleChatSelection = async (id, liElement) => {
+    document.querySelectorAll(".chat-list li").forEach((item) => {
+      item.classList.remove("selected");
+    });
+
+    loadMessages(id);
+
+    unreadMessElement = liElement.querySelector(".unread-count");
+    if (unreadMessElement) {
+      unreadMessElement.remove();
+      await axios.patch(`/chat/removeUnreadMess/${currentChatId}`);
+    }
+    liElement.classList.add("selected");
   };
 
   // Send a message
@@ -198,16 +200,53 @@ document.addEventListener("DOMContentLoaded", () => {
     const {
       data: { messages },
     } = await axios.get(`/chat/messages/${chatId}`);
+    console.log(messages);
 
     const messagesContainer = document.getElementById("messages");
     messagesContainer.innerHTML = "";
 
+    //create avatar to show a single person
+    const createAvatarSingle = () => {
+      // Aggiungi l'avatar utente
+      const avatarSpan = document.createElement("span");
+      avatarSpan.className = "user-avatar";
+      avatarSpan.innerHTML = '<i class="fas fa-user"></i>';
+      return avatarSpan;
+    };
+
     //display every message
     messages.forEach(({ message, createdBy }) => {
       const messageContainer = document.createElement("div");
-      messageContainer.className =
-        createdBy === currentUserEmail ? "message-right" : "message-left";
-      messageContainer.textContent = message;
+
+      // Aggiungi l'avatar utente
+      const avatarSpan = createAvatarSingle();
+
+      // Aggiungi il contenuto del messaggio
+      const messageText = document.createElement("span");
+      messageText.textContent = message;
+      messageText.className = "message-text";
+
+      // Aggiungi tutto al contenitore del messaggio
+      messageContainer.appendChild(avatarSpan);
+      messageContainer.appendChild(messageText);
+
+      // Applica la classe in base all'utente
+      if (createdBy === currentUserEmail) {
+        messageContainer.className = "message-right";
+
+        // Aggiungi tutto al contenitore del messaggio
+        messageContainer.appendChild(messageText);
+        messageContainer.appendChild(avatarSpan);
+      } else {
+        messageContainer.className = "message-left";
+
+        // Aggiungi tutto al contenitore del messaggio
+        messageContainer.appendChild(avatarSpan);
+
+        messageContainer.appendChild(messageText);
+      }
+
+      // Aggiungi il messaggio al contenitore
       messagesContainer.appendChild(messageContainer);
     });
 
@@ -220,24 +259,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Receive messages
   socket.on("receiveMessage", async (data) => {
+    console.log(data);
     const chatItem = document.querySelector(
       `li.chat-item[id="${data.currentChatId}"]`
     );
-
-    console.log("dentro al receive message: " + currentChatId);
 
     if (data.currentChatId === currentChatId) {
       console.log("denro perche l'altro utente ha la chat aperta");
       const { message, createdBy } = data;
       const messageContainer = document.createElement("div");
+      const avatarSpan = createAvatarSingle();
+
       messageContainer.className =
         createdBy === currentUserEmail ? "message-right" : "message-left";
       messageContainer.textContent = message;
       document.getElementById("messages").appendChild(messageContainer);
 
+      if (data.createdBy === currentUserEmail) {
+        //to increment the unread messages for every one in the chat except the emitter
+        await axios.patch(`/chat/unreadCont/${currentChatId}`);
+      }
+
       scrollToBottom();
     } else {
-      //ONLY IF THE USER IS ONLINE
+      //ONLY IF THE USER IS ONLINE BUT HAS ANOTHER CHAT OPEN
       // Increment unread message count for the chat
 
       if (chatItem) {
@@ -254,8 +299,6 @@ document.addEventListener("DOMContentLoaded", () => {
           // Incrementa il contatore esistente
           unreadCount.textContent = parseInt(unreadCount.textContent) + 1;
         }
-        //to increment the unread messages for every one in the chat except the emitter
-        await axios.patch(`/chat/unreadCont/${data.currentChatId}`);
       }
     }
 
@@ -392,10 +435,13 @@ document.addEventListener("DOMContentLoaded", () => {
           isGroup: false,
         });
 
-        if (success) {
-          //load the messages even if the chat was just created
-          loadMessages(_id);
+        //select the chat with the background purple
+        const suppLi = document.getElementById(_id);
 
+        //change the chat selected an
+        handleChatSelection(_id, suppLi);
+
+        if (success) {
           //to clear what was left in it
           searchInput.value = "";
 
@@ -404,6 +450,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
           //only if the chat wasn't already created
           if (!exists) loadChats(0, "");
+
+          //remove unread messages
+          if (unreadMessElement) {
+            unreadMessElement.remove();
+            await axios.patch(`/chat/removeUnreadMess/${currentChatId}`);
+          }
         }
         event.stopPropagation();
       });

@@ -376,20 +376,44 @@ body {
   text-align: right;
   background-color: #d1e7dd;
   color: #0f5132;
-  padding: 10px;
-  margin: 5px;
+  padding: 10px 15px 10px 40px; /* Più padding a destra */
+  margin: 5px 5px 5px auto; /* Margin sinistro auto per spingere a destra */
   border-radius: 10px;
   align-self: flex-end;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end; /* Allinea il contenuto a destra */
+  max-width: 70%; /* Larghezza massima per non occupare tutto lo spazio */
+  position: relative;
+  margin-left: auto; /* Questo spinge il messaggio a destra */
 }
 
 .message-left {
   text-align: left;
   background-color: #f8d7da;
   color: #842029;
-  padding: 10px;
-  margin: 5px;
+  padding: 10px 40px 10px 15px; /* Più padding a sinistra */
+  margin: 5px auto 5px 5px; /* Margin destro auto */
   border-radius: 10px;
   align-self: flex-start;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  max-width: 70%; /* Larghezza massima */
+}
+
+/* Per l'avatar all'interno dei messaggi */
+.message-right .user-avatar {
+  order: 2; /* Mette l'avatar dopo il testo */
+  margin-left: 10px;
+  margin-right: 0;
+}
+
+.message-left .user-avatar {
+  order: 0; /* Mette l'avatar prima del testo */
+  margin-right: 10px;
+  margin-left: 0;
 }
 
 /* Barra di ricerca e creazione chat */
