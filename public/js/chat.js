@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   //-----------------------------------------------------------
   //set the impossible button based on how many elements the selectedUsers has
-  const chageImpossibleButton = () => {
+  const changeImpossibleButton = () => {
     if (selectedUsers.size !== 0) {
       if (createButton.classList.contains("impossible-create-btn"))
         createButton.classList.remove("impossible-create-btn");
@@ -155,8 +155,9 @@ document.addEventListener("DOMContentLoaded", () => {
         loadMessages(chat._id);
 
         //remove the unread-count if it exists
-        unreadMessElement = document.querySelector(".unread-count");
+        unreadMessElement = li.querySelector(".unread-count");
         if (unreadMessElement) {
+          console.log(currentChatId);
           unreadMessElement.remove();
           await axios.patch(`/chat/removeUnreadMess/${currentChatId}`);
         }
@@ -219,7 +220,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Receive messages
   socket.on("receiveMessage", async (data) => {
+    const chatItem = document.querySelector(
+      `li.chat-item[id="${data.currentChatId}"]`
+    );
+
+    console.log("dentro al receive message: " + currentChatId);
+
     if (data.currentChatId === currentChatId) {
+      console.log("denro perche l'altro utente ha la chat aperta");
       const { message, createdBy } = data;
       const messageContainer = document.createElement("div");
       messageContainer.className =
@@ -228,15 +236,9 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("messages").appendChild(messageContainer);
 
       scrollToBottom();
-
-      //to increment the unread messages for every one in the chat except the emitter
-      await axios.patch(`/chat/unreadCont/${data.currentChatId}`);
     } else {
       //ONLY IF THE USER IS ONLINE
       // Increment unread message count for the chat
-      const chatItem = document.querySelector(
-        `li.chat-item[id="${data.currentChatId}"]`
-      );
 
       if (chatItem) {
         let unreadCount = chatItem.querySelector(".unread-count");
@@ -252,15 +254,21 @@ document.addEventListener("DOMContentLoaded", () => {
           // Incrementa il contatore esistente
           unreadCount.textContent = parseInt(unreadCount.textContent) + 1;
         }
-      }
-
-      // to move up the chat that got a increment in the unread message counter
-      const chatList = document.getElementById("chats");
-      if (chatList && chatItem.parentNode === chatList) {
-        chatList.insertBefore(chatItem, chatList.firstChild);
+        //to increment the unread messages for every one in the chat except the emitter
+        await axios.patch(`/chat/unreadCont/${data.currentChatId}`);
       }
     }
+
+    // to move up the chat that got a increment in the unread message counter
+    moveUpChat(chatItem);
   });
+
+  const moveUpChat = (chatItem) => {
+    const chatList = document.getElementById("chats");
+    if (chatList && chatItem) {
+      chatList.insertBefore(chatItem, chatList.firstChild);
+    }
+  };
 
   //---------------------------------------------------------------------------------------------------------------------
 
@@ -370,7 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
           selectedUsers.delete(user.email);
         }
 
-        chageImpossibleButton();
+        changeImpossibleButton();
       };
 
       //------------------------------------------------------
@@ -392,7 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
           searchInput.value = "";
 
           selectedUsers.clear(); //delete all the elements
-          chageImpossibleButton(); //to restore the impoossible button
+          changeImpossibleButton(); //to restore the impoossible button
 
           //only if the chat wasn't already created
           if (!exists) loadChats(0, "");
@@ -427,7 +435,7 @@ document.addEventListener("DOMContentLoaded", () => {
     popUp.classList.remove("openPopUp");
 
     selectedUsers.clear(); //delete all the elements
-    chageImpossibleButton(); //to restore the impoossible button
+    changeImpossibleButton(); //to restore the impoossible button
   });
 
   // load the chats at every refresh page

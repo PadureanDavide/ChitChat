@@ -185,6 +185,7 @@ const getMessages = async (req, res) => {
 //increment unread messages cont
 const incUnreadMess = async (req, res) => {
   const { chatId } = req.params;
+  console.log("dentro");
 
   if (!chatId) throw new BadRequestError("a param must be provided");
 
@@ -192,7 +193,7 @@ const incUnreadMess = async (req, res) => {
   if (!chat) throw new BadRequestError("chat not found");
 
   chat.members.forEach((member) => {
-    if (member.name !== req.user.email) {
+    if (member.name === req.user.email) {
       member.numUnreadMessages += 1;
     }
   });
