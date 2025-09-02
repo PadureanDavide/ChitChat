@@ -34,7 +34,8 @@ body {
 }
 
 /* POPUP CORRETTO - Adesso è relativo al contenitore padre */
-.popUpNewChat {
+.popUpNewChat,
+.popUpSettings {
   position: absolute;
   top: 0;
   right: -100%; /* Inizia fuori dallo schermo a destra */
@@ -51,7 +52,7 @@ body {
   flex-direction: column;
 }
 
-.popUpNewChat.openPopUp {
+.openPopUp {
   right: 0; /* Scorre da destra */
   visibility: visible;
 }
@@ -59,7 +60,6 @@ body {
 /* Pulsante di chiusura (X) in alto a sinistra */
 .popup-close {
   position: absolute;
-  top: 15px;
   left: 15px;
   width: 30px;
   height: 30px;
@@ -333,7 +333,6 @@ body {
 /* Colonna messaggi */
 .message-column {
   flex: 1 1 0;
-  background: var(--light-bg);
   border-radius: 16px;
   padding: 16px;
   display: flex;

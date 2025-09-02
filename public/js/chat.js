@@ -9,9 +9,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedUsers = new Set();
 
   const popUp = document.querySelector(".popUpNewChat");
+  const popUpGroupSettings = document.querySelector(".popUpSettings");
   const usersList = document.querySelector(".users-list");
   const openPopUp = document.querySelector("#plusButton");
-  const closePopUp = document.querySelector(".popup-close");
+  const closePopUp = document.querySelectorAll(".popup-close");
   const createButton = document.querySelector(".create-btn");
 
   const groupSettings = document.getElementById("groupSettings");
@@ -320,139 +321,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Receive messages
-  socket.on("receiveMessage", async (data) => {
-    const chatItem = document.querySelector(
-      `li.chat-item[id="${data.currentChatId}"]`
-    );
-
-    if (data.currentChatId === currentChatId) {
-      const { message, createdBy, typeOfChat } = data;
-      const messageContainer = document.createElement("div");
-
-      const messageText = document.createElement("div");
-      messageText.className = "contEmailMess";
-
-      const messageContent = document.createElement("span");
-      messageContent.textContent = message;
-      messageContent.className = "message-text";
-
-      //first position the message right or left based on who send it
-      if (createdBy === currentUserEmail) {
-        messageContainer.className = "singleMessage message-right";
-      } else messageContainer.className = "singleMessage message-left";
-      messageContainer.id = createdBy;
-
-      //if it is a group chat
-      if (typeOfChat) {
-        //get the last meessage sent
-        var supp = document.querySelectorAll(".singleMessage");
-        supp = supp[supp.length - 1];
-
-        if (!supp || supp.id !== createdBy) {
-          messageCreator = document.createElement("div");
-          messageCreator.textContent = createdBy;
-          messageCreator.className = "creatorName";
-          messageText.appendChild(messageCreator);
-        } else {
-          supp = supp.querySelector(".user-avatar");
-          supp.classList.add("avatar-hide");
-        }
-
-        const avatarSpan = createAvatarSingle();
-        messageContainer.appendChild(avatarSpan);
-      }
-
-      messageText.appendChild(messageContent);
-      messageContainer.append(messageText);
-
-      document.getElementById("messages").appendChild(messageContainer);
-
-      scrollToBottom();
-    } else {
-      //ONLY IF THE USER IS ONLINE BUT HAS ANOTHER CHAT OPEN
-      // Increment unread message count for the chat
-      await axios.patch(`/chat/unreadCont/${data.currentChatId}`);
-
-      if (chatItem) {
-        let unreadCount = chatItem.querySelector(".unread-count");
-
-        if (!unreadCount) {
-          unreadCount = document.createElement("span");
-          unreadCount.className = "unread-count";
-          unreadCount.textContent = "1";
-
-          // Aggiungi il numerino accanto al nome della chat
-          chatItem.appendChild(unreadCount);
-        } else {
-          // Incrementa il contatore esistente
-          unreadCount.textContent = parseInt(unreadCount.textContent) + 1;
-        }
-      }
-    }
-
-    // to move up the chat that got a increment in the unread message counter
-    moveUpChat(chatItem);
-  });
-
-  //---------------------------------------------------------------------------------------------------------------------
-
-  // Listener per cercare una chat
-  searchChat.addEventListener("input", async (event) => {
-    const query = event.target.value.trim();
-    if (query !== "") loadChats(1, query);
-    else loadChats(0, "");
-  });
-
-  // Invio messaggio dal form
-  if (messageForm && messageInput) {
-    messageForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      if (currentChatId && messageInput.value.trim()) {
-        sendMessage(messageInput.value.trim());
-        messageInput.value = "";
-      }
-    });
-  }
-
-  // Listener per creare una nuova chat
-  createChatForm.addEventListener("submit", async (event) => {
-    console.log(event);
-    event.preventDefault();
-    const nameGroup = searchInput.value;
-
-    selectedUsers.add(currentUserEmail);
-
-    const {
-      data: { success, _id },
-    } = await axios.post("/chat/createChat", {
-      name: nameGroup,
-      isGroup: true,
-      membersToAdd: Array.from(selectedUsers),
-    });
-
-    if (success) {
-      popUp.classList.remove("openPopUp");
-      selectedUsers.clear(); //delete all the elements
-      changeImpossibleButton(); //to restore the impoossible button
-
-      //load the chats
-      await loadChats(0, "");
-
-      //change the chat selected
-      handleChatSelection(_id, document.getElementById(_id));
-    }
-  });
-
-  //event listener to open the pop up
-  openPopUp.addEventListener("click", async (e) => {
-    popUp.classList.add("openPopUp");
+  //dispay all the users available
+  const displayUsers = (users, type) => {
     usersList.innerHTML = "";
-
-    //get all users
-    const {
-      data: { users },
-    } = await axios.get("/getAllUsers");
 
     //display all the users
     users.forEach((user) => {
@@ -572,19 +443,165 @@ document.addEventListener("DOMContentLoaded", () => {
         updateSelection();
       });
     });
+  };
+
+  // Receive messages
+  socket.on("receiveMessage", async (data) => {
+    const chatItem = document.querySelector(
+      `li.chat-item[id="${data.currentChatId}"]`
+    );
+
+    if (data.currentChatId === currentChatId) {
+      const { message, createdBy, typeOfChat } = data;
+      const messageContainer = document.createElement("div");
+
+      const messageText = document.createElement("div");
+      messageText.className = "contEmailMess";
+
+      const messageContent = document.createElement("span");
+      messageContent.textContent = message;
+      messageContent.className = "message-text";
+
+      //first position the message right or left based on who send it
+      if (createdBy === currentUserEmail) {
+        await axios.patch(`/chat/unreadCont/${data.currentChatId}`);
+        messageContainer.className = "singleMessage message-right";
+      } else {
+        await axios.patch(`/chat/removeUnreadMess/${data.currentChatId}`);
+        messageContainer.className = "singleMessage message-left";
+      }
+      messageContainer.id = createdBy;
+
+      //if it is a group chat
+      if (typeOfChat) {
+        //get the last meessage sent
+        var supp = document.querySelectorAll(".singleMessage");
+        supp = supp[supp.length - 1];
+
+        if (!supp || supp.id !== createdBy) {
+          messageCreator = document.createElement("div");
+          messageCreator.textContent = createdBy;
+          messageCreator.className = "creatorName";
+          messageText.appendChild(messageCreator);
+        } else {
+          supp = supp.querySelector(".user-avatar");
+          supp.classList.add("avatar-hide");
+        }
+
+        const avatarSpan = createAvatarSingle();
+        messageContainer.appendChild(avatarSpan);
+      }
+
+      messageText.appendChild(messageContent);
+      messageContainer.append(messageText);
+
+      document.getElementById("messages").appendChild(messageContainer);
+
+      scrollToBottom();
+    } else {
+      //ONLY IF THE USER IS ONLINE BUT HAS ANOTHER CHAT OPEN
+      // Increment unread message count for the chat
+
+      if (chatItem) {
+        let unreadCount = chatItem.querySelector(".unread-count");
+
+        if (!unreadCount) {
+          unreadCount = document.createElement("span");
+          unreadCount.className = "unread-count";
+          unreadCount.textContent = "1";
+
+          // Aggiungi il numerino accanto al nome della chat
+          chatItem.appendChild(unreadCount);
+        } else {
+          // Incrementa il contatore esistente
+          unreadCount.textContent = parseInt(unreadCount.textContent) + 1;
+        }
+      }
+    }
+
+    // to move up the chat that got a increment in the unread message counter
+    moveUpChat(chatItem);
+  });
+
+  //---------------------------------------------------------------------------------------------------------------------
+
+  // Listener per cercare una chat
+  searchChat.addEventListener("input", async (event) => {
+    const query = event.target.value.trim();
+    if (query !== "") loadChats(1, query);
+    else loadChats(0, "");
+  });
+
+  // Invio messaggio dal form
+  if (messageForm && messageInput) {
+    messageForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (currentChatId && messageInput.value.trim()) {
+        sendMessage(messageInput.value.trim());
+        messageInput.value = "";
+      }
+    });
+  }
+
+  // Listener per creare una nuova chat
+  createChatForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const nameGroup = searchInput.value;
+
+    selectedUsers.add(currentUserEmail);
+
+    const {
+      data: { success, _id },
+    } = await axios.post("/chat/createChat", {
+      name: nameGroup,
+      isGroup: true,
+      membersToAdd: Array.from(selectedUsers),
+    });
+
+    if (success) {
+      popUp.classList.remove("openPopUp");
+      selectedUsers.clear(); //delete all the elements
+      changeImpossibleButton(); //to restore the impoossible button
+
+      //load the chats
+      await loadChats(0, "");
+
+      //change the chat selected
+      handleChatSelection(_id, document.getElementById(_id));
+    }
+  });
+
+  //event listener to open the pop up
+  openPopUp.addEventListener("click", async (e) => {
+    popUp.classList.add("openPopUp");
+
+    //get all users
+    const {
+      data: { users },
+    } = await axios.get("/getAllUsers");
+
+    displayUsers(users);
   });
 
   //event listener to close the popup
-  closePopUp.addEventListener("click", (e) => {
-    popUp.classList.remove("openPopUp");
 
-    selectedUsers.clear(); //delete all the elements
-    changeImpossibleButton(); //to restore the impoossible button
+  closePopUp.forEach((pop) => {
+    pop.addEventListener("click", (e) => {
+      //close the popup open
+      document.querySelector(".openPopUp").classList.remove("openPopUp");
+      selectedUsers.clear(); //delete all the elements
+      changeImpossibleButton(); //to restore the impoossible button
+    });
   });
 
   //group settings
-  groupSettings.addEventListener("click", (e) => {
-    console.log("dentro");
+  groupSettings.addEventListener("click", async (e) => {
+    popUpGroupSettings.classList.add("openPopUp");
+
+    //get all users
+    const {
+      data: { users },
+    } = await axios.get(`/getAllUsersGroup/${currentChatId}`);
   });
 
   // load the chats at every refresh page

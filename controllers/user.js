@@ -5,6 +5,7 @@ const {
   createJWTAccess,
   createJWTRefresh,
 } = require("../utils/generateTokens");
+const Chat = require("../models/chat");
 
 //required to pass from a html file to another
 const path = require("path");
@@ -98,6 +99,18 @@ const getAllUsers = async (req, res) => {
   res.status(StatusCodes.OK).json({ users });
 };
 
+const getAllUsersGroup = async (req, res) => {
+  const { chatId } = req.params;
+
+  //get all the users
+  const users = getAllUsers(req, res);
+
+  const groupUsers = await Chat.find({ _id: chatId }).select("members");
+  console.log(groupUsers);
+
+  res.status(StatusCodes.OK).json("success");
+};
+
 //-------------------------------------------------------
 //logout
 const logout = async (req, res) => {};
@@ -109,4 +122,5 @@ module.exports = {
   register,
   getEmail,
   getAllUsers,
+  getAllUsersGroup,
 };
