@@ -69,6 +69,7 @@ const createChat = async (req, res) => {
     const chatExists = await Chat.findOne({
       isGroup: false,
       "members.name": req.body.emailOther,
+      "members.name": req.user.email,
     }).select("_id");
 
     //if the chat exists, then execute only the res
@@ -88,11 +89,12 @@ const createChat = async (req, res) => {
 
       if (!chat) throw new BadRequestError("error during creating a chat");
 
-      res.status(StatusCodes.OK).json({ success: true, exists: false });
+      res
+        .status(StatusCodes.OK)
+        .json({ success: true, exists: false, _id: chat._id });
     }
   } else {
-    //to create group IN THE NEXT EPISODE
-
+    //to create group
     const members = req.body.membersToAdd.map((email) => ({
       name: email, // Usa l'email come nome, oppure potresti voler cercare il nome utente
       numUnreadMessages: 0,
@@ -105,10 +107,12 @@ const createChat = async (req, res) => {
       members: members,
     });
 
+    console.log(chat);
+
     if (!chat)
       throw new BadRequestError("error during the creation of a new group");
 
-    res.status(StatusCodes.OK).json({ success: true });
+    res.status(StatusCodes.OK).json({ success: true, _id: chat._id });
   }
 };
 
@@ -162,12 +166,21 @@ const saveMessage = async (req, res) => {
     chatAt: currentChatId,
   });
 
-  res.status(StatusCodes.CREATED).json({ newMessage });
+  const chat = await Chat.findOne({ _id: currentChatId });
+
+  res
+    .status(StatusCodes.CREATED)
+    .json({ success: true, typeChat: chat.isGroup });
 };
 
 // Get all messages for a specific chat
 const getMessages = async (req, res) => {
   const { chatAt } = req.params;
+
+  const chat = await Chat.findOne({ _id: chatAt });
+
+  if (!chat)
+    throw new BadRequestError("error during finding the chat selected");
 
   if (!chatAt) {
     throw new BadRequestError("need to provide a chat id");
@@ -179,12 +192,13 @@ const getMessages = async (req, res) => {
     throw new BadRequestError("error during get all messages for a chat");
   }
 
-  res.status(StatusCodes.OK).json({ messages });
+  res
+    .status(StatusCodes.OK)
+    .json({ messages: messages, isGroup: chat.isGroup });
 };
 
 //increment unread messages cont
 const incUnreadMess = async (req, res) => {
-  console.log("incremento");
   const { chatId } = req.params;
 
   if (!chatId) throw new BadRequestError("a param must be provided");
@@ -205,8 +219,6 @@ const incUnreadMess = async (req, res) => {
 
 //remove the unread counter from the database
 const removeUnreadMess = async (req, res) => {
-  console.log("azzeramento");
-
   const { chatId } = req.params;
 
   const result = await Chat.findOneAndUpdate(

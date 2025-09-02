@@ -14,6 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const closePopUp = document.querySelector(".popup-close");
   const createButton = document.querySelector(".create-btn");
 
+  const groupSettings = document.getElementById("groupSettings");
+
   const chatList = document.getElementById("chats");
   const searchInput = document.getElementById("create-chat-input");
   const searchChat = document.getElementById("search-chat-input");
@@ -104,19 +106,21 @@ document.addEventListener("DOMContentLoaded", () => {
       li.className = "chat-item";
       li.id = chat._id;
 
-      //create name element
-      const nameElement = document.createElement("div");
-      nameElement.className = "chat-name";
-      nameElement.textContent = chat.nameChat || "Chat senza nome";
-
       if (chat.isGroup) {
+        const avatar = createAvatarGroup();
+
         //create name element
         const nameElement = document.createElement("div");
         nameElement.className = "chat-name";
         nameElement.textContent = chat.nameChat || "Chat senza nome";
 
+        li.appendChild(avatar);
         li.appendChild(nameElement);
       } else {
+        const avatar = createAvatarSingle();
+
+        const containerNameEmail = document.createElement("div");
+
         //create name element
         const nameElement = document.createElement("div");
         nameElement.className = "chat-name";
@@ -128,8 +132,11 @@ document.addEventListener("DOMContentLoaded", () => {
         //if the value email do not exist, then this space will be empty
         detailsElement.textContent = chat.nameEmail?.email || "";
 
-        li.appendChild(nameElement);
-        li.appendChild(detailsElement);
+        containerNameEmail.append(nameElement);
+        containerNameEmail.append(detailsElement);
+
+        li.appendChild(avatar);
+        li.appendChild(containerNameEmail);
       }
 
       //create element for unread messages
@@ -160,26 +167,34 @@ document.addEventListener("DOMContentLoaded", () => {
       item.classList.remove("selected");
     });
 
-    loadMessages(id);
-
-    unreadMessElement = liElement.querySelector(".unread-count");
-    if (unreadMessElement) {
-      unreadMessElement.remove();
-      await axios.patch(`/chat/removeUnreadMess/${currentChatId}`);
+    if (liElement) {
+      unreadMessElement = liElement.querySelector(".unread-count");
+      if (unreadMessElement) {
+        unreadMessElement.remove();
+        await axios.patch(`/chat/removeUnreadMess/${liElement.id}`);
+      }
+      loadMessages(id);
     }
+
     liElement.classList.add("selected");
   };
 
   // Send a message
   const sendMessage = async (message) => {
     // Save message to the database
-    await axios.post("/chat/messages", { message, currentChatId });
+    const {
+      data: { typeChat },
+    } = await axios.post("/chat/messages", {
+      message,
+      currentChatId,
+    });
 
     // Emit the message to the server
     socket.emit("sendMessage", {
       message,
       currentChatId,
       createdBy: currentUserEmail,
+      typeOfChat: typeChat,
     });
   };
 
@@ -187,6 +202,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const scrollToBottom = () => {
     const messagesContainer = document.getElementById("messages");
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  };
+
+  //create avatar to show a single person
+  const createAvatarSingle = () => {
+    // Aggiungi l'avatar utente
+    const avatarSpan = document.createElement("span");
+    avatarSpan.className = "user-avatar";
+    avatarSpan.innerHTML = '<i class="fas fa-user"></i>';
+    return avatarSpan;
+  };
+
+  //create avatar to show a group of people
+  const createAvatarGroup = () => {
+    // Aggiungi l'avatar utente
+    const avatarSpan = document.createElement("span");
+    avatarSpan.className = "user-avatar";
+    avatarSpan.innerHTML = '<i class="fa-solid fa-users"></i>';
+    return avatarSpan;
   };
 
   //function called when a chat is cliked, so all the messages for that chat will be displayed
@@ -198,52 +231,74 @@ document.addEventListener("DOMContentLoaded", () => {
 
     //get all the messages
     const {
-      data: { messages },
+      data: { messages, isGroup },
     } = await axios.get(`/chat/messages/${chatId}`);
-    console.log(messages);
 
     const messagesContainer = document.getElementById("messages");
     messagesContainer.innerHTML = "";
+    var avatarSpan = null;
+    var messageCreator = null;
 
-    //create avatar to show a single person
-    const createAvatarSingle = () => {
-      // Aggiungi l'avatar utente
-      const avatarSpan = document.createElement("span");
-      avatarSpan.className = "user-avatar";
-      avatarSpan.innerHTML = '<i class="fas fa-user"></i>';
-      return avatarSpan;
-    };
+    if (
+      (isGroup && groupSettings.classList.contains("hideSettings")) ||
+      isGroup
+    ) {
+      groupSettings.classList.remove("hideSettings");
+    } else {
+      groupSettings.classList.add("hideSettings");
+    }
 
     //display every message
-    messages.forEach(({ message, createdBy }) => {
+    messages.forEach(({ message, createdBy }, index) => {
       const messageContainer = document.createElement("div");
 
-      // Aggiungi l'avatar utente
-      const avatarSpan = createAvatarSingle();
-
-      // Aggiungi il contenuto del messaggio
+      // Crea il contenitore per il testo del messaggio
       const messageText = document.createElement("span");
-      messageText.textContent = message;
-      messageText.className = "message-text";
+      messageText.className = "contEmailMess";
+
+      // Crea il testo del messaggio
+      const messageContent = document.createElement("span");
+      messageContent.className = "message-text";
+      messageContent.textContent = message;
+
+      if (isGroup) {
+        var currentMessage = messages[index];
+        var previusMessage = messages[index - 1];
+        var nextMessage = messages[index + 1];
+
+        avatarSpan = createAvatarSingle();
+        messageContainer.appendChild(avatarSpan);
+
+        //add the email of the message creator
+        if (
+          !previusMessage ||
+          previusMessage.createdBy !== currentMessage.createdBy
+        ) {
+          // Crea il creatore del messaggio
+          messageCreator = document.createElement("div");
+          messageCreator.textContent = createdBy;
+          messageCreator.className = "creatorName";
+          messageText.appendChild(messageCreator);
+        }
+
+        if (nextMessage && currentMessage.createdBy === nextMessage.createdBy) {
+          avatarSpan.classList.add("avatar-hide");
+        }
+
+        messageContainer.id = createdBy;
+      }
 
       // Aggiungi tutto al contenitore del messaggio
-      messageContainer.appendChild(avatarSpan);
+      messageText.appendChild(messageContent);
+
+      // Aggiungi tutto al contenitore principale del messaggio
       messageContainer.appendChild(messageText);
 
       // Applica la classe in base all'utente
       if (createdBy === currentUserEmail) {
-        messageContainer.className = "message-right";
-
-        // Aggiungi tutto al contenitore del messaggio
-        messageContainer.appendChild(messageText);
-        messageContainer.appendChild(avatarSpan);
+        messageContainer.className = "singleMessage message-right";
       } else {
-        messageContainer.className = "message-left";
-
-        // Aggiungi tutto al contenitore del messaggio
-        messageContainer.appendChild(avatarSpan);
-
-        messageContainer.appendChild(messageText);
+        messageContainer.className = "singleMessage message-left";
       }
 
       // Aggiungi il messaggio al contenitore
@@ -257,33 +312,67 @@ document.addEventListener("DOMContentLoaded", () => {
     scrollToBottom();
   };
 
+  //to move up the chat
+  const moveUpChat = (chatItem) => {
+    const chatList = document.getElementById("chats");
+    if (chatList && chatItem) {
+      chatList.insertBefore(chatItem, chatList.firstChild);
+    }
+  };
+
   // Receive messages
   socket.on("receiveMessage", async (data) => {
-    console.log(data);
     const chatItem = document.querySelector(
       `li.chat-item[id="${data.currentChatId}"]`
     );
 
     if (data.currentChatId === currentChatId) {
-      console.log("denro perche l'altro utente ha la chat aperta");
-      const { message, createdBy } = data;
+      const { message, createdBy, typeOfChat } = data;
       const messageContainer = document.createElement("div");
-      const avatarSpan = createAvatarSingle();
 
-      messageContainer.className =
-        createdBy === currentUserEmail ? "message-right" : "message-left";
-      messageContainer.textContent = message;
-      document.getElementById("messages").appendChild(messageContainer);
+      const messageText = document.createElement("div");
+      messageText.className = "contEmailMess";
 
-      if (data.createdBy === currentUserEmail) {
-        //to increment the unread messages for every one in the chat except the emitter
-        await axios.patch(`/chat/unreadCont/${currentChatId}`);
+      const messageContent = document.createElement("span");
+      messageContent.textContent = message;
+      messageContent.className = "message-text";
+
+      //first position the message right or left based on who send it
+      if (createdBy === currentUserEmail) {
+        messageContainer.className = "singleMessage message-right";
+      } else messageContainer.className = "singleMessage message-left";
+      messageContainer.id = createdBy;
+
+      //if it is a group chat
+      if (typeOfChat) {
+        //get the last meessage sent
+        var supp = document.querySelectorAll(".singleMessage");
+        supp = supp[supp.length - 1];
+
+        if (!supp || supp.id !== createdBy) {
+          messageCreator = document.createElement("div");
+          messageCreator.textContent = createdBy;
+          messageCreator.className = "creatorName";
+          messageText.appendChild(messageCreator);
+        } else {
+          supp = supp.querySelector(".user-avatar");
+          supp.classList.add("avatar-hide");
+        }
+
+        const avatarSpan = createAvatarSingle();
+        messageContainer.appendChild(avatarSpan);
       }
+
+      messageText.appendChild(messageContent);
+      messageContainer.append(messageText);
+
+      document.getElementById("messages").appendChild(messageContainer);
 
       scrollToBottom();
     } else {
       //ONLY IF THE USER IS ONLINE BUT HAS ANOTHER CHAT OPEN
       // Increment unread message count for the chat
+      await axios.patch(`/chat/unreadCont/${data.currentChatId}`);
 
       if (chatItem) {
         let unreadCount = chatItem.querySelector(".unread-count");
@@ -306,30 +395,7 @@ document.addEventListener("DOMContentLoaded", () => {
     moveUpChat(chatItem);
   });
 
-  const moveUpChat = (chatItem) => {
-    const chatList = document.getElementById("chats");
-    if (chatList && chatItem) {
-      chatList.insertBefore(chatItem, chatList.firstChild);
-    }
-  };
-
   //---------------------------------------------------------------------------------------------------------------------
-
-  // Listener per creare una nuova chat
-  createChatForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const nameGroup = searchInput.value;
-
-    selectedUsers.add(currentUserEmail);
-
-    const {
-      data: { success },
-    } = await axios.post("/chat/createChat", {
-      name: nameGroup,
-      isGroup: true,
-      membersToAdd: Array.from(selectedUsers),
-    });
-  });
 
   // Listener per cercare una chat
   searchChat.addEventListener("input", async (event) => {
@@ -348,6 +414,35 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // Listener per creare una nuova chat
+  createChatForm.addEventListener("submit", async (event) => {
+    console.log(event);
+    event.preventDefault();
+    const nameGroup = searchInput.value;
+
+    selectedUsers.add(currentUserEmail);
+
+    const {
+      data: { success, _id },
+    } = await axios.post("/chat/createChat", {
+      name: nameGroup,
+      isGroup: true,
+      membersToAdd: Array.from(selectedUsers),
+    });
+
+    if (success) {
+      popUp.classList.remove("openPopUp");
+      selectedUsers.clear(); //delete all the elements
+      changeImpossibleButton(); //to restore the impoossible button
+
+      //load the chats
+      await loadChats(0, "");
+
+      //change the chat selected
+      handleChatSelection(_id, document.getElementById(_id));
+    }
+  });
 
   //event listener to open the pop up
   openPopUp.addEventListener("click", async (e) => {
@@ -435,12 +530,6 @@ document.addEventListener("DOMContentLoaded", () => {
           isGroup: false,
         });
 
-        //select the chat with the background purple
-        const suppLi = document.getElementById(_id);
-
-        //change the chat selected an
-        handleChatSelection(_id, suppLi);
-
         if (success) {
           //to clear what was left in it
           searchInput.value = "";
@@ -449,7 +538,10 @@ document.addEventListener("DOMContentLoaded", () => {
           changeImpossibleButton(); //to restore the impoossible button
 
           //only if the chat wasn't already created
-          if (!exists) loadChats(0, "");
+          if (!exists) await loadChats(0, "");
+
+          //change the chat selected
+          handleChatSelection(_id, document.getElementById(_id));
 
           //remove unread messages
           if (unreadMessElement) {
@@ -488,6 +580,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     selectedUsers.clear(); //delete all the elements
     changeImpossibleButton(); //to restore the impoossible button
+  });
+
+  //group settings
+  groupSettings.addEventListener("click", (e) => {
+    console.log("dentro");
   });
 
   // load the chats at every refresh page
