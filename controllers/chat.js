@@ -4,6 +4,7 @@ const User = require("../models/user");
 const Message = require("../models/message");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
+const { STATES } = require("mongoose");
 
 //----------------------------------------------------------------------------
 const getChatCompleted = async (req, res, val) => {
@@ -68,9 +69,10 @@ const createChat = async (req, res) => {
   if (!req.body.isGroup) {
     const chatExists = await Chat.findOne({
       isGroup: false,
-      "members.name": req.body.emailOther,
-      "members.name": req.user.email,
-    }).select("_id");
+      "members.name": {
+        $all: [req.user.email, req.body.emailOther],
+      },
+    });
 
     //if the chat exists, then execute only the res
     if (chatExists) {
@@ -106,8 +108,6 @@ const createChat = async (req, res) => {
       nameChat: req.body.name,
       members: members,
     });
-
-    console.log(chat);
 
     if (!chat)
       throw new BadRequestError("error during the creation of a new group");
@@ -244,6 +244,24 @@ const removeUnreadMess = async (req, res) => {
   res.status(StatusCodes.OK).json({ success: true });
 };
 
+const removeUserFromGroup = async (req, res) => {
+  const { chatId, userEmail } = req.params;
+
+  const result = await Chat.findByIdAndUpdate(
+    chatId,
+    {
+      $pull: {
+        members: { name: userEmail },
+      },
+    },
+    { new: true }
+  );
+
+  res.status(StatusCodes.OK).json({ success: true });
+};
+
+const addUsersToGroup = async (req, res) => {};
+
 module.exports = {
   chatIndex,
   getChats,
@@ -254,4 +272,6 @@ module.exports = {
   getMessages,
   incUnreadMess,
   removeUnreadMess,
+  removeUserFromGroup,
+  addUsersToGroup,
 };

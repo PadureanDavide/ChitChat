@@ -103,12 +103,38 @@ const getAllUsersGroup = async (req, res) => {
   const { chatId } = req.params;
 
   //get all the users
-  const users = getAllUsers(req, res);
+  const users = await User.find({ email: { $ne: req.user.email } }).select(
+    "email name"
+  );
 
-  const groupUsers = await Chat.find({ _id: chatId }).select("members");
-  console.log(groupUsers);
+  if (!users)
+    throw new BadRequestError("error during get all users execept myself");
 
-  res.status(StatusCodes.OK).json("success");
+  var groupUsers = await Chat.findById(chatId).select("members");
+  if (!groupUsers) throw new BadRequestError("error during get group users");
+
+  //to set the users that are already in the group
+  groupUsers = await setUsersAlreadyIn(users, groupUsers.members);
+
+  res.status(StatusCodes.OK).json({ success: true, users: groupUsers });
+};
+
+const setUsersAlreadyIn = async (allUsers, groupMembers) => {
+  // Estrai tutte le email dei membri del gruppo
+
+  const groupMemberNames = groupMembers.map((member) => member.name);
+
+  // Aggiungi il campo isAlreadyIn a ogni utente
+  const usersWithStatus = allUsers.map((user) => {
+    const isAlreadyInGroup = groupMemberNames.includes(user.email);
+
+    return {
+      ...user.toObject(),
+      isAlreadyInGroup: isAlreadyInGroup,
+    };
+  });
+
+  return usersWithStatus;
 };
 
 //-------------------------------------------------------
