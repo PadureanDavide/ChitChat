@@ -260,7 +260,42 @@ const removeUserFromGroup = async (req, res) => {
   res.status(StatusCodes.OK).json({ success: true });
 };
 
-const addUsersToGroup = async (req, res) => {};
+const addUsersToGroup = async (req, res) => {
+  const { chatId, newMembers } = req.body;
+
+  const chat = await Chat.findById(chatId);
+
+  if (!chat || !chat.isGroup)
+    throw new BadRequestError(
+      "passed a id chat that is no available or is a single chat"
+    );
+
+  //only the chat creator can do such things
+  emailToId = await User.findOne({ email: req.user.email }).select("_id");
+
+  if (chat.createdBy === emailToId._id.toString()) {
+    //check if the new memebers are real persons
+    const existingUsers = await User.find({
+      email: { $in: newMembers },
+    }).select("-refreshTokens");
+
+    if (!existingUsers || existingUsers.size !== newMembers.size)
+      throw new BadRequestError("some users are not real");
+
+    const newMembersCompleted = newMembers.map((email) => ({
+      name: email, // Usa l'email come nome, oppure potresti voler cercare il nome utente
+      numUnreadMessages: 0,
+    }));
+
+    chat.members.push(...newMembersCompleted);
+    await chat.save();
+
+    res.status(StatusCodes.OK).json({ success: true });
+  } else
+    res
+      .status(StatusCodes.FORBIDDEN)
+      .json({ msg: "someone else is tying to access restriceted area" });
+};
 
 module.exports = {
   chatIndex,

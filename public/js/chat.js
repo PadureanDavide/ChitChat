@@ -633,12 +633,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  addUsersToGroupButton.addEventListener("click", (event) => {
+  addUsersToGroupButton.addEventListener("click", async (event) => {
+    popUpGroupSettings.classList.remove("openPopUp");
+
+    const selectedUsersArray = Array.from(selectedUsers);
+
+    await axios.patch("/chat/addUsersToGroup", {
+      chatId: currentChatId,
+      newMembers: Array.from(selectedUsers),
+    });
     selectedUsers.clear(); //delete all the elements
     changeImpossibleButton(false); //to restore the impoossible button
-    popUp.classList.remove("openPopUp");
-
-    await axios.patch("/chat/addUsersToGroup/:");
   });
 
   //event listener to open the pop up
