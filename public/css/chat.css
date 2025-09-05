@@ -382,7 +382,7 @@ body {
 
 .creatorName {
   margin-bottom: 10px;
-  font-weight: 645;
+  font-weight: 550;
 }
 
 .message-right {
@@ -416,7 +416,18 @@ body {
 }
 
 .message-center {
-  margin: 0 auto;
+  margin: 10px;
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+
+.message-center .contEmailMess {
+  width: fit-content;
+  max-width: 50dvw;
+  font-size: 0.8rem;
+  color: white;
+  background-color: #7d7d7d;
 }
 
 .message-right .contEmailMess {

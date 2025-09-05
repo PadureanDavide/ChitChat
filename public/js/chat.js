@@ -197,28 +197,38 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // Send a message
-  const sendMessage = async (message) => {
+  const sendMessage = async (message, typeMessage) => {
     // Save message to the database
     const {
       data: { typeChat },
     } = await axios.post("/chat/messages", {
       message,
       currentChatId,
+      typeMessage,
     });
 
-    // Emit the message to the server
-    socket.emit("sendMessage", {
-      message,
-      currentChatId,
-      createdBy: currentUserEmail,
-      typeOfChat: typeChat,
-    });
+    if (typeMessage) {
+      // Emit the message to the server
+      socket.emit("sendMessage", {
+        message,
+        currentChatId,
+        createdBy: currentUserEmail,
+        typeOfChat: typeChat,
+      });
+    } else {
+      // Emit the message to the server
+      socket.emit("sendMessage", {
+        message,
+        messageCommon: true,
+      });
+    }
   };
 
   // Function to scroll to the bottom of the messages container
   const scrollToBottom = () => {
     const messagesContainer = document.getElementById("messages");
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    console.log(messagesContainer);
   };
 
   //create avatar to show a single person
@@ -279,30 +289,44 @@ document.addEventListener("DOMContentLoaded", () => {
       messageContent.textContent = message;
 
       if (isGroup) {
-        var currentMessage = messages[index];
-        var previusMessage = messages[index - 1];
-        var nextMessage = messages[index + 1];
-
-        avatarSpan = createAvatarSingle();
-        messageContainer.appendChild(avatarSpan);
-
-        //add the email of the message creator
-        if (
-          !previusMessage ||
-          previusMessage.createdBy !== currentMessage.createdBy
-        ) {
-          // Crea il creatore del messaggio
-          messageCreator = document.createElement("div");
-          messageCreator.textContent = createdBy;
-          messageCreator.className = "creatorName";
-          messageText.appendChild(messageCreator);
+        // Applica la classe in base all'utente
+        if (createdBy === currentUserEmail) {
+          messageContainer.className = "singleMessage message-right";
+        } else {
+          messageContainer.className = "singleMessage message-left";
         }
 
-        if (nextMessage && currentMessage.createdBy === nextMessage.createdBy) {
-          avatarSpan.classList.add("avatar-hide");
-        }
+        if (createdBy === "SERVER NOTIFICATION") {
+          messageContainer.className = "message-center";
+        } else {
+          var currentMessage = messages[index];
+          var previusMessage = messages[index - 1];
+          var nextMessage = messages[index + 1];
 
-        messageContainer.id = createdBy;
+          avatarSpan = createAvatarSingle();
+          messageContainer.appendChild(avatarSpan);
+
+          //add the email of the message creator
+          if (
+            !previusMessage ||
+            previusMessage.createdBy !== currentMessage.createdBy
+          ) {
+            // Crea il creatore del messaggio
+            messageCreator = document.createElement("div");
+            messageCreator.textContent = createdBy;
+            messageCreator.className = "creatorName";
+            messageText.appendChild(messageCreator);
+          }
+
+          if (
+            nextMessage &&
+            currentMessage.createdBy === nextMessage.createdBy
+          ) {
+            avatarSpan.classList.add("avatar-hide");
+          }
+
+          messageContainer.id = createdBy;
+        }
       }
 
       // Aggiungi tutto al contenitore del messaggio
@@ -310,13 +334,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Aggiungi tutto al contenitore principale del messaggio
       messageContainer.appendChild(messageText);
-
-      // Applica la classe in base all'utente
-      if (createdBy === currentUserEmail) {
-        messageContainer.className = "singleMessage message-right";
-      } else {
-        messageContainer.className = "singleMessage message-left";
-      }
 
       // Aggiungi il messaggio al contenitore
       messagesContainer.appendChild(messageContainer);
@@ -393,7 +410,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (user.isAlreadyInGroup) {
           checkbox.checked = true;
           checkbox.disabled = true;
-          addIcon.className = "user-add-icon ";
+          addIcon.className = "user-add-icon";
           addIcon.id = "removeUser";
           addIcon.innerHTML = '<i class="fa-solid fa-trash"></i>';
         }
@@ -427,9 +444,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       //------------------------------------------------------
       addIcon.addEventListener("click", async (event) => {
-        if (event.target.closest(".user-add-icon").id === "addUser") {
+        event.stopPropagation();
+
+        userItemTarget = event.target.closest(".user-add-icon");
+        if (userItemTarget.id === "addUser") {
           popUp.classList.remove("openPopUp");
-          console.log(user.email);
 
           const {
             data: { success, exists, _id },
@@ -456,6 +475,11 @@ document.addEventListener("DOMContentLoaded", () => {
               unreadMessElement.remove();
               await axios.patch(`/chat/removeUnreadMess/${currentChatId}`);
             }
+
+            sendMessage(
+              `${user.email} has been kiked off the group by ${currentUserEmail}`,
+              false
+            );
           }
         } else {
           checkbox.checked = false;
@@ -463,21 +487,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
           await axios.patch(`/chat/removeUser/${currentChatId}/${user.email}`);
 
-          // Emit the message to the server
-          socket.emit("sendMessage", {
-            message: `${user.email} has been kiked off the group by ${currentUserEmail}`,
-            messageCommon: true,
-          });
-        }
+          userItemTarget.remove();
 
-        event.stopPropagation();
+          sendMessage(
+            `${user.email} has been kiked off the group by ${currentUserEmail}`,
+            false
+          );
+        }
       });
 
       //------------------------------------------------------
       checkbox.addEventListener("click", (event) => {
+        event.stopPropagation();
         userItemTarget = event.target.closest(".user-item");
         updateSelection(userItemTarget.id);
-        event.stopPropagation();
       });
 
       userItem.addEventListener("click", (event) => {
@@ -488,12 +511,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
           }
 
-          if (userItemTarget.querySelector("#removeUser")) {
-            userItemTarget.querySelector(".user-checkbox").disabled = false;
-            userItemTarget.querySelector(".user-checkbox").checked = true;
-
-            userItemTarget.querySelector("#removeUser").remove();
-          }
           // need to invert manually because you click on the div and not directly on the checkbox
           checkbox.checked = !checkbox.checked;
           updateSelection(userItemTarget.id);
@@ -519,6 +536,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (data.messageCommon) {
       messageContainer.className = "message-center";
+
+      messageText.appendChild(messageContent);
+      messageContainer.append(messageText);
+      document.getElementById("messages").appendChild(messageContainer);
     } else {
       if (data.currentChatId === currentChatId) {
         const { createdBy, typeOfChat } = data;
@@ -581,6 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    console.log("e prorpio qui");
     // to move up the chat that got a increment in the unread message counter
     moveUpChat(chatItem);
   });
@@ -599,7 +621,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageForm.addEventListener("submit", (e) => {
       e.preventDefault();
       if (currentChatId && messageInput.value.trim()) {
-        sendMessage(messageInput.value.trim());
+        sendMessage(messageInput.value.trim(), true);
         messageInput.value = "";
       }
     });
@@ -640,7 +662,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     await axios.patch("/chat/addUsersToGroup", {
       chatId: currentChatId,
-      newMembers: Array.from(selectedUsers),
+      newMembers: selectedUsersArray,
+    });
+
+    selectedUsersArray.forEach((user) => {
+      sendMessage(
+        `${currentUserEmail} invited to join the group ${user}`,
+        false
+      );
     });
     selectedUsers.clear(); //delete all the elements
     changeImpossibleButton(false); //to restore the impoossible button

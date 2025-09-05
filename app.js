@@ -51,6 +51,7 @@ io.on("connection", (socket) => {
   console.log("A user connected");
 
   socket.on("sendMessage", (message) => {
+    console.log(message);
     // Broadcast the message to all connected clients
     io.emit("receiveMessage", message);
   });

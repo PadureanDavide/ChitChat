@@ -154,17 +154,25 @@ const searchChat = async (req, res) => {
 
 // Save a new message to the database
 const saveMessage = async (req, res) => {
-  const { message, currentChatId } = req.body;
+  const { message, currentChatId, typeMessage } = req.body;
 
   if (!message || !currentChatId) {
     throw new BadRequestError("Message and chat ID are required");
   }
 
-  const newMessage = await Message.create({
-    message: message,
-    createdBy: req.user.email,
-    chatAt: currentChatId,
-  });
+  if (typeMessage) {
+    const newMessage = await Message.create({
+      message: message,
+      createdBy: req.user.email,
+      chatAt: currentChatId,
+    });
+  } else {
+    const newMessage = await Message.create({
+      message: message,
+      createdBy: "SERVER NOTIFICATION",
+      chatAt: currentChatId,
+    });
+  }
 
   const chat = await Chat.findOne({ _id: currentChatId });
 
