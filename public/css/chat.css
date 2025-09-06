@@ -382,7 +382,7 @@ body {
 
 .creatorName {
   margin-bottom: 10px;
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .message-right {
@@ -392,13 +392,12 @@ body {
   align-self: flex-end;
   display: flex;
   flex-direction: row;
-  align-items: flex-end;
   justify-content: flex-end; /* Allinea il contenuto a destra */
   width: fit-content;
   max-width: 70%; /* Larghezza massima per non occupare tutto lo spazio */
   position: relative;
   margin-left: auto; /* Questo spinge il messaggio a destra */
-  align-items: center;
+  align-items: flex-end;
 }
 
 .message-left {

@@ -16,8 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const createButton = document.querySelector(".create-btn");
   const addUsersToGroupButton = document.querySelector(".addUsers-btn");
 
+  var messagesContainer = null;
   let userItemTarget = null;
   const groupSettings = document.getElementById("groupSettings");
+  const quitGroup = document.getElementById("exitGroup");
 
   const chatList = document.getElementById("chats");
   const searchInput = document.getElementById("create-chat-input");
@@ -226,9 +228,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Function to scroll to the bottom of the messages container
   const scrollToBottom = () => {
-    const messagesContainer = document.getElementById("messages");
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    console.log(messagesContainer);
+    messagesContainer = document.getElementById("messages");
+
+    messagesContainer.scrollTo({
+      top: messagesContainer.scrollHeight,
+      behavior: "smooth",
+    });
   };
 
   //create avatar to show a single person
@@ -261,19 +266,21 @@ document.addEventListener("DOMContentLoaded", () => {
       data: { messages, isGroup },
     } = await axios.get(`/chat/messages/${chatId}`);
 
-    const messagesContainer = document.getElementById("messages");
+    messagesContainer = document.getElementById("messages");
     messagesContainer.innerHTML = "";
     var avatarSpan = null;
     var messageCreator = null;
 
-    if (
-      (isGroup && groupSettings.classList.contains("hideSettings")) ||
-      isGroup
-    ) {
-      groupSettings.classList.remove("hideSettings");
-    } else {
-      groupSettings.classList.add("hideSettings");
-    }
+    // if (
+    //   (isGroup && groupSettings.classList.contains("hideSettings")) ||
+    //   isGroup
+    // ) {
+    //   groupSettings.classList.remove("hideSettings");
+    // } else {
+    //   groupSettings.classList.add("hideSettings");
+    // }
+
+    groupSettings.classList.remove("hideSettings");
 
     //display every message
     messages.forEach(({ message, createdBy }, index) => {
@@ -297,7 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (createdBy === "SERVER NOTIFICATION") {
-          messageContainer.className = "message-center";
+          messageContainer.className = "singleMessage message-center";
         } else {
           var currentMessage = messages[index];
           var previusMessage = messages[index - 1];
@@ -475,11 +482,6 @@ document.addEventListener("DOMContentLoaded", () => {
               unreadMessElement.remove();
               await axios.patch(`/chat/removeUnreadMess/${currentChatId}`);
             }
-
-            sendMessage(
-              `${user.email} has been kiked off the group by ${currentUserEmail}`,
-              false
-            );
           }
         } else {
           checkbox.checked = false;
@@ -490,7 +492,7 @@ document.addEventListener("DOMContentLoaded", () => {
           userItemTarget.remove();
 
           sendMessage(
-            `${user.email} has been kiked off the group by ${currentUserEmail}`,
+            `${user.email} was removed from the group by ${currentUserEmail}`,
             false
           );
         }
@@ -535,7 +537,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageContent.className = "message-text";
 
     if (data.messageCommon) {
-      messageContainer.className = "message-center";
+      messageContainer.className = "singleMessage message-center";
 
       messageText.appendChild(messageContent);
       messageContainer.append(messageText);
@@ -578,8 +580,6 @@ document.addEventListener("DOMContentLoaded", () => {
         messageContainer.append(messageText);
 
         document.getElementById("messages").appendChild(messageContainer);
-
-        scrollToBottom();
       } else {
         //ONLY IF THE USER IS ONLINE BUT HAS ANOTHER CHAT OPEN
         // Increment unread message count for the chat
@@ -601,8 +601,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
     }
+    scrollToBottom();
 
-    console.log("e prorpio qui");
     // to move up the chat that got a increment in the unread message counter
     moveUpChat(chatItem);
   });
@@ -667,7 +667,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     selectedUsersArray.forEach((user) => {
       sendMessage(
-        `${currentUserEmail} invited to join the group ${user}`,
+        `${currentUserEmail} was added to the group by ${user}`,
         false
       );
     });
@@ -713,4 +713,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // load the chats at every refresh page
   loadChats(0, "");
+
+  quitGroup.addEventListener("click", async (event) => {
+    const {
+      data: { success },
+    } = await axios.patch(`/chat/deleteChat/${currentChatId}`);
+
+    if (success) {
+      document.getElementById(currentChatId).remove();
+      popUpGroupSettings.classList.remove("openPopUp");
+      groupSettings.classList.add("hideSettings");
+      document.getElementById("messages").innerHTML = "";
+      currentChatId = null;
+    }
+  });
 });

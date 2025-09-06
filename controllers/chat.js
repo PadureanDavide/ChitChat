@@ -82,7 +82,7 @@ const createChat = async (req, res) => {
     } else {
       //only if the chat do not exist
       const chat = await Chat.create({
-        createdBy: req.user._id,
+        createdBy: req.user.email,
         members: [
           { name: req.user.email, numUnreadMessages: 0 },
           { name: req.body.emailOther, numUnreadMessages: 0 },
@@ -103,7 +103,7 @@ const createChat = async (req, res) => {
     }));
 
     const chat = await Chat.create({
-      createdBy: req.user._id,
+      createdBy: req.user.email,
       isGroup: true,
       nameChat: req.body.name,
       members: members,
@@ -278,10 +278,7 @@ const addUsersToGroup = async (req, res) => {
       "passed a id chat that is no available or is a single chat"
     );
 
-  //only the chat creator can do such things
-  emailToId = await User.findOne({ email: req.user.email }).select("_id");
-
-  if (chat.createdBy === emailToId._id.toString()) {
+  if (chat.createdBy === req.user.email) {
     //check if the new memebers are real persons
     const existingUsers = await User.find({
       email: { $in: newMembers },
@@ -305,6 +302,35 @@ const addUsersToGroup = async (req, res) => {
       .json({ msg: "someone else is tying to access restriceted area" });
 };
 
+const deleteChat = async (req, res) => {
+  const { chatId } = req.params;
+
+  //exit the chat
+  const chat = await Chat.findByIdAndUpdate(
+    chatId,
+    {
+      $pull: {
+        members: { name: req.user.email },
+      },
+    },
+    { new: true }
+  );
+
+  if (!chat) throw new BadRequestError("chat not found for exit the chat");
+
+  if (chat.members.length !== 0) {
+    if (chat.createdBy === req.user.email) {
+      chat.createdBy = chat.members[0].name;
+      await chat.save();
+      res.status(StatusCodes.OK).json({ success: true, noMembersLeft: false });
+    }
+  } else {
+    await chat.findByIdAndDelete(chatId);
+    await Message.deleteMany({ chatAt: chatId });
+    res.status(StatusCodes.OK).json({ success: true, noMembersLeft: true });
+  }
+};
+
 module.exports = {
   chatIndex,
   getChats,
@@ -317,4 +343,5 @@ module.exports = {
   removeUnreadMess,
   removeUserFromGroup,
   addUsersToGroup,
+  deleteChat,
 };

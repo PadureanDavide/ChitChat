@@ -12,6 +12,7 @@ const {
   removeUnreadMess,
   removeUserFromGroup,
   addUsersToGroup,
+  deleteChat,
 } = require("../controllers/chat");
 
 const auth = require("../middleware/authentication");
@@ -27,6 +28,7 @@ router.route("/unreadCont/:chatId").patch(incUnreadMess);
 router.route("/removeUnreadMess/:chatId").patch(removeUnreadMess);
 router.route("/removeUser/:chatId/:userEmail").patch(removeUserFromGroup);
 router.route("/addUsersToGroup").patch(addUsersToGroup);
+router.route("/deleteChat/:chatId").patch(deleteChat);
 
 // Salva un messaggio (REST fallback, opzionale)
 router.route("/messages").post(saveMessage);
