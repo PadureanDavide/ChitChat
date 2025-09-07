@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   let currentChatId = null;
   let currentUserEmail = null;
+  let chatIsGroup = null;
 
   let unreadMessElement = null;
 
@@ -12,14 +13,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const popUpGroupSettings = document.querySelector(".popUpSettings");
   let usersList = document.querySelector(".users-list");
   const openPopUp = document.querySelector("#plusButton");
-  const closePopUp = document.querySelectorAll(".popup-close");
   const createButton = document.querySelector(".create-btn");
   const addUsersToGroupButton = document.querySelector(".addUsers-btn");
 
   var messagesContainer = null;
   let userItemTarget = null;
   const groupSettings = document.getElementById("groupSettings");
-  const quitGroup = document.getElementById("exitGroup");
+  let quitChat = document.getElementById("exitGroup");
 
   const chatList = document.getElementById("chats");
   const searchInput = document.getElementById("create-chat-input");
@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const sendMessage = async (message, typeMessage) => {
     // Save message to the database
     const {
-      data: { typeChat },
+      data: { chatIsGroup },
     } = await axios.post("/chat/messages", {
       message,
       currentChatId,
@@ -215,7 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
         message,
         currentChatId,
         createdBy: currentUserEmail,
-        typeOfChat: typeChat,
+        typeOfChat: chatIsGroup,
       });
     } else {
       // Emit the message to the server
@@ -266,6 +266,8 @@ document.addEventListener("DOMContentLoaded", () => {
       data: { messages, isGroup },
     } = await axios.get(`/chat/messages/${chatId}`);
 
+    chatIsGroup = isGroup;
+
     messagesContainer = document.getElementById("messages");
     messagesContainer.innerHTML = "";
     var avatarSpan = null;
@@ -295,14 +297,14 @@ document.addEventListener("DOMContentLoaded", () => {
       messageContent.className = "message-text";
       messageContent.textContent = message;
 
-      if (isGroup) {
-        // Applica la classe in base all'utente
-        if (createdBy === currentUserEmail) {
-          messageContainer.className = "singleMessage message-right";
-        } else {
-          messageContainer.className = "singleMessage message-left";
-        }
+      // Applica la classe in base all'utente
+      if (createdBy === currentUserEmail) {
+        messageContainer.className = "singleMessage message-right";
+      } else {
+        messageContainer.className = "singleMessage message-left";
+      }
 
+      if (isGroup) {
         if (createdBy === "SERVER NOTIFICATION") {
           messageContainer.className = "singleMessage message-center";
         } else {
@@ -458,13 +460,14 @@ document.addEventListener("DOMContentLoaded", () => {
           popUp.classList.remove("openPopUp");
 
           const {
-            data: { success, exists, _id },
+            data: { success, exists, _id, name },
           } = await axios.post("/chat/createChat", {
             emailOther: user.email,
             isGroup: false,
           });
 
           if (success) {
+            const chatInQuestion = document.getElementById(_id);
             //to clear what was left in it
             searchInput.value = "";
 
@@ -473,9 +476,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
             //only if the chat wasn't already created
             if (!exists) await loadChats(0, "");
+            else {
+              if (!chatInQuestion) {
+                let li = document.createElement("li");
+                li.className = "chat-item";
+                li.id = _id;
 
-            //change the chat selected
-            handleChatSelection(_id, document.getElementById(_id));
+                const avatar = createAvatarSingle();
+
+                const containerNameEmail = document.createElement("div");
+
+                //create name element
+                const nameElement = document.createElement("div");
+                nameElement.className = "chat-name";
+                nameElement.textContent = name || "Chat senza nome";
+
+                //create detail element (email)
+                const detailsElement = document.createElement("div");
+                detailsElement.className = "chat-details";
+                //if the value email do not exist, then this space will be empty
+                detailsElement.textContent = user.email || "";
+
+                containerNameEmail.append(nameElement);
+                containerNameEmail.append(detailsElement);
+
+                li.appendChild(avatar);
+                li.appendChild(containerNameEmail);
+                chatList.appendChild(li);
+
+                //change the chat selected
+                handleChatSelection(_id, li);
+              }
+            }
 
             //remove unread messages
             if (unreadMessElement) {
@@ -687,44 +719,101 @@ document.addEventListener("DOMContentLoaded", () => {
     displayUsers(users, false);
   });
 
-  //event listener to close the popup
-
-  closePopUp.forEach((pop) => {
-    pop.addEventListener("click", (e) => {
-      //close the popup open
-      document.querySelector(".openPopUp").classList.remove("openPopUp");
-      selectedUsers.clear(); //delete all the elements
-      changeImpossibleButton(true); //to restore the impoossible button
-      changeImpossibleButton(false); //to restore the impoossible button
-    });
-  });
-
   //group settings
   groupSettings.addEventListener("click", async (e) => {
     popUpGroupSettings.classList.add("openPopUp");
 
-    //get all users
-    const {
-      data: { users },
-    } = await axios.get(`/getAllUsersGroup/${currentChatId}`);
+    if (chatIsGroup) {
+      popUpGroupSettings.innerHTML = groupSettingsHtml;
 
-    displayUsers(users, true);
+      //get all users
+      const {
+        data: { users },
+      } = await axios.get(`/getAllUsersGroup/${currentChatId}`);
+
+      displayUsers(users, true);
+    } else {
+      popUpGroupSettings.innerHTML = singleChatSettingsHtml;
+    }
+    closePopUpListeners();
+    buttonQuitChat();
   });
 
   // load the chats at every refresh page
   loadChats(0, "");
 
-  quitGroup.addEventListener("click", async (event) => {
-    const {
-      data: { success },
-    } = await axios.patch(`/chat/deleteChat/${currentChatId}`);
+  const closePopUpListeners = () => {
+    const closeButtons = document.querySelectorAll(".popup-close");
+    closeButtons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        // Rimuovi solo la classe openPopUp dall'elemento corretto
+        const popup =
+          e.target.closest(".popup-container") ||
+          document.querySelector(".openPopUp");
+        if (popup) {
+          popup.classList.remove("openPopUp");
+        }
 
-    if (success) {
-      document.getElementById(currentChatId).remove();
-      popUpGroupSettings.classList.remove("openPopUp");
-      groupSettings.classList.add("hideSettings");
-      document.getElementById("messages").innerHTML = "";
-      currentChatId = null;
-    }
-  });
+        selectedUsers.clear();
+        changeImpossibleButton(true);
+        changeImpossibleButton(false);
+      });
+    });
+  };
+
+  const buttonQuitChat = () => {
+    quitChat = document.getElementById("exitGroup");
+    quitChat.addEventListener("click", async (event) => {
+      const {
+        data: { success },
+      } = await axios.patch(`/chat/deleteChat/${currentChatId}/${chatIsGroup}`);
+
+      if (success) {
+        document.getElementById(currentChatId).remove();
+        popUpGroupSettings.classList.remove("openPopUp");
+        groupSettings.classList.add("hideSettings");
+        document.getElementById("messages").innerHTML = "";
+        currentChatId = null;
+        messageForm.classList.add("hide-form-sender");
+      }
+    });
+  };
+
+  closePopUpListeners();
+
+  const groupSettingsHtml = ` <div class="popup-header">
+          <h3>Impostazioni del gruppo</h3>
+          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" class="popup-close">
+            <path fill="#a259c6" d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"></path>
+          </svg>
+        </div>
+
+        <div class="users-list-container">
+          <h4>Seleziona partecipanti:</h4>
+          <div class="users-list"><div class="user-item" id="settingsChat"><input type="checkbox" class="user-checkbox" disabled=""><label for="davidepadurean@gmail.com"><span class="user-avatar"><i class="fas fa-user"></i></span><span class="user-info"><span class="user-name">dave</span><span class="user-email">davidepadurean@gmail.com</span></span></label><span class="user-add-icon" id="removeUser"><i class="fa-solid fa-trash"></i></span></div><div class="user-item" id="settingsChat"><input type="checkbox" class="user-checkbox"><label for="giuliapadurean@gmail.com"><span class="user-avatar"><i class="fas fa-user"></i></span><span class="user-info"><span class="user-name">giulia</span><span class="user-email">giuliapadurean@gmail.com</span></span></label><span></span></div></div>
+        </div>
+        <button type="submit" class="addUsers-btn impossible-create-btn">
+          <i class="fas fa-plus"></i> Aggiungi persone
+        </button>
+
+        <button type="submit" class="addUsers-btn" id="exitGroup">
+          <i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i>
+          abbandona il gruppo
+        </button>`;
+
+  const singleChatSettingsHtml = ` <div class="popup-header">
+          <h3>Impostazioni della chat</h3>
+          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" class="popup-close">
+            <path fill="#a259c6" d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"></path>
+          </svg>
+        </div>
+
+        <div class="users-list-container">
+        </div>
+        
+
+        <button type="submit" class="addUsers-btn" id="exitGroup">
+          <i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i>
+          esci dal gruppo
+        </button>`;
 });

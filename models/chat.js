@@ -24,6 +24,10 @@ const ChatSchema = new mongoose.Schema(
           type: Number,
           default: 0,
         },
+        exitFromSingleChat: {
+          type: Boolean,
+          required: true,
+        },
       },
     ],
   },

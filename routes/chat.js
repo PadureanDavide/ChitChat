@@ -28,7 +28,7 @@ router.route("/unreadCont/:chatId").patch(incUnreadMess);
 router.route("/removeUnreadMess/:chatId").patch(removeUnreadMess);
 router.route("/removeUser/:chatId/:userEmail").patch(removeUserFromGroup);
 router.route("/addUsersToGroup").patch(addUsersToGroup);
-router.route("/deleteChat/:chatId").patch(deleteChat);
+router.route("/deleteChat/:chatId/:chatIsGroup").patch(deleteChat);
 
 // Salva un messaggio (REST fallback, opzionale)
 router.route("/messages").post(saveMessage);

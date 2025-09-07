@@ -6,6 +6,8 @@
     <title>Le mie Chat</title>
     <meta name="user-email" content="{{USER_EMAIL}}" />
     <link rel="stylesheet" href="/css/chat.css" />
+    <link rel="stylesheet" href="/css/navMenu.css" />
+
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -16,6 +18,10 @@
     />
   </head>
   <body>
+    <div class="nav-menu">
+      <i class="fa-solid fa-comment" style="font-size: 1.5em"></i>
+      <i class="fa-solid fa-id-badge" style="font-size: 1.5em"></i>
+    </div>
     <div class="chat-card">
       <!-- POPUP PER CREAZIONE CHAT DI GRUPPO -->
       <div class="popUpNewChat">
@@ -222,6 +228,7 @@
         </div>
       </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/chat.js"></script>

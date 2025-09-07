@@ -53,7 +53,14 @@ const chatIndex = async (req, res) => {
 
 //get all personal chats
 const getChats = async (req, res) => {
-  const chats = await Chat.find({ "members.name": req.user.email }).sort({
+  const chats = await Chat.find({
+    members: {
+      $elemMatch: {
+        name: req.user.email,
+        exitFromSingleChat: false,
+      },
+    },
+  }).sort({
     updatedAt: -1,
   }); //to order them based on the updatedAt value (last updated first)
 
@@ -76,16 +83,30 @@ const createChat = async (req, res) => {
 
     //if the chat exists, then execute only the res
     if (chatExists) {
-      res
-        .status(StatusCodes.OK)
-        .json({ success: true, exists: true, _id: chatExists._id });
+      const nameUser = await User.findOne({
+        email: req.body.emailOther,
+      }).select("name");
+      res.status(StatusCodes.OK).json({
+        success: true,
+        exists: true,
+        _id: chatExists._id,
+        name: nameUser.name,
+      });
     } else {
       //only if the chat do not exist
       const chat = await Chat.create({
         createdBy: req.user.email,
         members: [
-          { name: req.user.email, numUnreadMessages: 0 },
-          { name: req.body.emailOther, numUnreadMessages: 0 },
+          {
+            name: req.user.email,
+            numUnreadMessages: 0,
+            exitFromSingleChat: false,
+          },
+          {
+            name: req.body.emailOther,
+            numUnreadMessages: 0,
+            exitFromSingleChat: false,
+          },
         ],
       });
 
@@ -100,6 +121,7 @@ const createChat = async (req, res) => {
     const members = req.body.membersToAdd.map((email) => ({
       name: email, // Usa l'email come nome, oppure potresti voler cercare il nome utente
       numUnreadMessages: 0,
+      exitFromSingleChat: false,
     }));
 
     const chat = await Chat.create({
@@ -139,10 +161,11 @@ const searchChat = async (req, res) => {
       {
         isGroup: true,
         nameChat: { $regex: chat, $options: "i" },
+        "members.name": req.user.email,
       },
       {
         isGroup: false,
-        "members.name": { $regex: chat },
+        "members.name": { $regex: req.user.email },
       },
     ],
   });
@@ -155,30 +178,54 @@ const searchChat = async (req, res) => {
 // Save a new message to the database
 const saveMessage = async (req, res) => {
   const { message, currentChatId, typeMessage } = req.body;
+  let newMessage = null;
 
   if (!message || !currentChatId) {
     throw new BadRequestError("Message and chat ID are required");
   }
 
   if (typeMessage) {
-    const newMessage = await Message.create({
+    newMessage = await Message.create({
       message: message,
       createdBy: req.user.email,
       chatAt: currentChatId,
     });
+
+    const validExitFromSingleChat = await Chat.findOneAndUpdate(
+      {
+        _id: currentChatId,
+        "members.name": req.user.email,
+      },
+      {
+        $set: {
+          "members.$.exitFromSingleChat": false,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!validExitFromSingleChat)
+      throw new BadRequestError(
+        "error during the setting false of exitFromSingleChat"
+      );
   } else {
-    const newMessage = await Message.create({
+    newMessage = await Message.create({
       message: message,
       createdBy: "SERVER NOTIFICATION",
       chatAt: currentChatId,
     });
   }
 
+  if (!newMessage)
+    throw new BadRequestError("error during the creation of a message");
+
   const chat = await Chat.findOne({ _id: currentChatId });
 
   res
     .status(StatusCodes.CREATED)
-    .json({ success: true, typeChat: chat.isGroup });
+    .json({ success: true, chatIsGroup: chat.isGroup });
 };
 
 // Get all messages for a specific chat
@@ -290,6 +337,7 @@ const addUsersToGroup = async (req, res) => {
     const newMembersCompleted = newMembers.map((email) => ({
       name: email, // Usa l'email come nome, oppure potresti voler cercare il nome utente
       numUnreadMessages: 0,
+      exitFromSingleChat: false,
     }));
 
     chat.members.push(...newMembersCompleted);
@@ -302,32 +350,70 @@ const addUsersToGroup = async (req, res) => {
       .json({ msg: "someone else is tying to access restriceted area" });
 };
 
+const confirmDeleteChat = async (chatId) => {
+  await Chat.findByIdAndDelete(chatId);
+  await Message.deleteMany({ chatAt: chatId });
+};
+
 const deleteChat = async (req, res) => {
-  const { chatId } = req.params;
+  const { chatId, chatIsGroup } = req.params;
+  let chat = null;
 
-  //exit the chat
-  const chat = await Chat.findByIdAndUpdate(
-    chatId,
-    {
-      $pull: {
-        members: { name: req.user.email },
+  if (chatIsGroup === "true") {
+    //exit the chat
+    chat = await Chat.findByIdAndUpdate(
+      chatId,
+      {
+        $pull: {
+          members: { name: req.user.email },
+        },
       },
-    },
-    { new: true }
-  );
+      { new: true }
+    );
 
-  if (!chat) throw new BadRequestError("chat not found for exit the chat");
+    if (!chat) throw new BadRequestError("chat group not found to exit");
 
-  if (chat.members.length !== 0) {
-    if (chat.createdBy === req.user.email) {
-      chat.createdBy = chat.members[0].name;
-      await chat.save();
-      res.status(StatusCodes.OK).json({ success: true, noMembersLeft: false });
+    if (chat.members.length !== 0) {
+      if (chat.createdBy === req.user.email) {
+        chat.createdBy = chat.members[0].name;
+        await chat.save();
+        res
+          .status(StatusCodes.OK)
+          .json({ success: true, noMembersLeft: false });
+      }
+    } else {
+      await confirmDeleteChat(chatId);
+      res.status(StatusCodes.OK).json({ success: true, noMembersLeft: true });
     }
   } else {
-    await chat.findByIdAndDelete(chatId);
-    await Message.deleteMany({ chatAt: chatId });
-    res.status(StatusCodes.OK).json({ success: true, noMembersLeft: true });
+    chat = await Chat.findOneAndUpdate(
+      {
+        _id: chatId,
+        "members.name": req.user.email,
+      },
+      {
+        $set: {
+          "members.$.exitFromSingleChat": true,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!chat)
+      throw new BadRequestError(
+        "chat not found or error during the updating of EXITFROMSINGLECHAT"
+      );
+
+    if (
+      chat.members[0].exitFromSingleChat &&
+      chat.members[1].exitFromSingleChat
+    ) {
+      await confirmDeleteChat(chatId);
+      res.status(StatusCodes.OK).json({ success: true, noMembersLeft: true });
+    } else
+      res.status(StatusCodes.OK).json({ success: true, noMembersLeft: false });
   }
 };
 

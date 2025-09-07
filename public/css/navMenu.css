@@ -1,0 +1,26 @@
+.cont-all {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-menu {
+  min-height: 50px;
+  min-width: 300px;
+  border-radius: 20px;
+  background-color: var(--white);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.nav-menu i {
+  transition: 0.5s ease;
+  color: var(--primary-color);
+}
+
+.nav-menu i:hover {
+  transform: scale(1.2);
+  color: var(--text-color);
+  cursor: pointer;
+}
