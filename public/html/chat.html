@@ -19,8 +19,12 @@
   </head>
   <body>
     <div class="nav-menu">
-      <i class="fa-solid fa-comment" style="font-size: 1.5em"></i>
-      <i class="fa-solid fa-id-badge" style="font-size: 1.5em"></i>
+      <i class="fa-solid fa-comment" id="chatUser" style="font-size: 1.5em"></i>
+      <i
+        class="fa-solid fa-id-badge"
+        id="profileUser"
+        style="font-size: 1.5em"
+      ></i>
     </div>
     <div class="chat-card">
       <!-- POPUP PER CREAZIONE CHAT DI GRUPPO -->
@@ -231,6 +235,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/js/chat.js"></script>
+    <script type="module" src="/js/chat.js"></script>
+    <script type="module" src="/js/profile.js"></script>
   </body>
 </html>

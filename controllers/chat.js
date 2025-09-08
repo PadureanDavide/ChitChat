@@ -4,7 +4,6 @@ const User = require("../models/user");
 const Message = require("../models/message");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
-const { STATES } = require("mongoose");
 
 //----------------------------------------------------------------------------
 const getChatCompleted = async (req, res, val) => {
