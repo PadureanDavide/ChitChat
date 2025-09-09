@@ -231,6 +231,7 @@ body {
   margin: 20px 0;
   width: 90%;
   max-width: 1200px;
+  height: 85dvh;
 }
 
 .chat-header {
@@ -279,6 +280,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-right: 1px solid var(--border-color);
 }
 
 .chat-list-column h2 {
@@ -582,6 +584,23 @@ body {
   background: var(--gradient-hover);
 }
 
+/* Stili per i bottoni del profilo */
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 7px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.btn-secondary:hover {
+  opacity: 0.9;
+}
+
 /* Contatore messaggi non letti */
 .unread-count {
   background-color: var(--primary-color);
@@ -622,6 +641,7 @@ body {
 
 #plusButton {
   cursor: pointer;
+  transition: 0.5s ease;
 }
 
 #groupSettings {

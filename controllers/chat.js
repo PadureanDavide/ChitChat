@@ -165,6 +165,7 @@ const searchChat = async (req, res) => {
       {
         isGroup: false,
         "members.name": { $regex: req.user.email },
+        exitFromSingleChat: false,
       },
     ],
   });

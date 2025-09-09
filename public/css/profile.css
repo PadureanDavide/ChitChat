@@ -1,0 +1,124 @@
+.profile-container {
+  padding: 2em;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 2em;
+}
+
+.profile-header h1 {
+  color: var(--primary-color);
+  font-size: 2rem;
+  margin-bottom: 0.5em;
+}
+
+.profile-form {
+  background: var(--white);
+  padding: 2em;
+  border-radius: 15px;
+  box-shadow: var(--shadow);
+}
+
+.form-group {
+  margin-bottom: 1.5em;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5em;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.profile-actions {
+  display: flex;
+  gap: 1em;
+  margin-top: 2em;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 7px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background: var(--gradient);
+  color: var(--white);
+  flex: 1;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: white;
+  padding: 10px 25px;
+}
+
+.btn-danger:hover {
+  opacity: 0.9;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 0.9rem;
+  margin-top: 0.5em;
+  display: none;
+}
+
+.success-message {
+  color: #198754;
+  font-size: 0.9rem;
+  margin-top: 0.5em;
+  display: none;
+}
+
+.profile-picture {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  margin: 0 auto 1.5em;
+  background: var(--gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 3rem;
+}
+
+.form-group.disabled input {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}

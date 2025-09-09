@@ -7,6 +7,7 @@
     <meta name="user-email" content="{{USER_EMAIL}}" />
     <link rel="stylesheet" href="/css/chat.css" />
     <link rel="stylesheet" href="/css/navMenu.css" />
+    <link rel="stylesheet" href="/css/profile.css" />
 
     <link
       rel="stylesheet"
@@ -19,9 +20,13 @@
   </head>
   <body>
     <div class="nav-menu">
-      <i class="fa-solid fa-comment" id="chatUser" style="font-size: 1.5em"></i>
       <i
-        class="fa-solid fa-id-badge"
+        class="fa-solid fa-comment scaleIncrease"
+        id="chatUser"
+        style="font-size: 1.5em"
+      ></i>
+      <i
+        class="fa-solid fa-id-badge scaleIncrease"
         id="profileUser"
         style="font-size: 1.5em"
       ></i>
@@ -174,15 +179,15 @@
       </div>
       <div class="chat-content">
         <div class="chat-sidebar">
-          <form id="search-chat-form" class="search-chat-form">
+          <div id="search-chat-form" class="search-chat-form">
             <input
               type="text"
               id="search-chat-input"
               placeholder="Cerca chat..."
             />
-          </form>
+          </div>
           <svg
-            class="hideSettings"
+            class="hideSettings scaleIncrease"
             id="groupSettings"
             xmlns="http://www.w3.org/2000/svg"
             width="30"
@@ -196,6 +201,7 @@
             />
           </svg>
           <svg
+            class="scaleIncrease"
             id="plusButton"
             xmlns="http://www.w3.org/2000/svg"
             width="30"

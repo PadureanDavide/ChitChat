@@ -19,7 +19,7 @@
   color: var(--primary-color);
 }
 
-.nav-menu i:hover {
+.scaleIncrease:hover {
   transform: scale(1.2);
   color: var(--text-color);
   cursor: pointer;
