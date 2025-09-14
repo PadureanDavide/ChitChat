@@ -1,71 +1,57 @@
-document.addEventListener("DOMContentLoaded", function () {
-  function loadAllElements() {
-    // DOM Elements for popup and chat creation
-    popUp = document.querySelector(".popUpNewChat");
-    popUpGroupSettings = document.querySelector(".popUpSettings");
-    usersList = document.querySelector(".users-list");
-    openPopUp = document.querySelector("#plusButton");
-    createButton = document.querySelector(".create-btn");
-    addUsersToGroupButton = document.querySelector(".addUsers-btn");
-
-    // Chat interface elements
-    messagesContainer = document.querySelector(".messages-container"); // Assuming this exists
-    userItemTarget = null; // This will be set dynamically
-    groupSettings = document.getElementById("groupSettings");
-    quitChat = document.getElementById("exitGroup");
-
-    // Chat list and search elements
-    chatList = document.getElementById("chats");
-    searchInput = document.getElementById("create-chat-input");
-    searchChat = document.getElementById("search-chat-input");
-    searchResults = document.getElementById("search-results");
-    createChatForm = document.getElementById("create-chat-form");
-    messageForm = document.getElementById("message-form");
-    messageInput = document.getElementById("message-input");
-
-    // Unread messages element
-    unreadMessElement = null; // This will be set dynamically
-  }
-
-  let currentChatId = null;
-  let currentUserEmail = null;
-  let chatIsGroup = null;
-
+document.addEventListener("DOMContentLoaded", async function async() {
+  // Unread messages element
   let unreadMessElement = null;
 
-  //instead of an array, we use Set, because we can store only elements that have differences amongs them
-  //and it has also the delete AND has functions
+  // Variables for current chat state
+  let currentChatId = null;
+  let currentUserId = null;
+  let chatIsGroup = null;
+
+  // User selection management
   let selectedUsers = new Set();
 
-  let popUp;
-  let popUpGroupSettings;
-  let usersList;
-  let openPopUp;
-  let createButton;
-  let addUsersToGroupButton;
+  // DOM Elements
+  let popUp = document.querySelector(".popUpNewChat");
+  let popUpGroupSettings = document.querySelector(".popUpSettings");
+  let usersList = document.querySelector(".users-list");
+  let openPopUp = document.querySelector("#plusButton");
+  let createButton = document.querySelector(".create-btn");
+  let addUsersToGroupButton = document.querySelector(".addUsers-btn");
 
-  let messagesContainer;
-  let messageCreator;
-  let avatarSpan;
-  let messageContainer;
-  let messageText;
+  // Chat interface elements
+  let messagesContainer = document.querySelector(".messages-container");
+  let messageCreator = null;
+  let avatarSpan = null;
+  let messageContainer = null;
+  let messageText = null;
 
-  let userItemTarget;
-  let groupSettings;
-  let quitChat;
+  // Chat management elements
+  let userItemTarget = null;
+  let groupSettings = document.getElementById("groupSettings");
+  let quitChat = document.getElementById("exitGroup");
 
-  let chatList;
-  let searchInput;
-  let searchChat;
-  let searchResults;
-  let createChatForm;
-  let messageForm;
-  let messageInput;
+  // Chat list and search elements
+  let chatList = document.getElementById("chats");
+  let searchInput = document.getElementById("create-chat-input");
+  let searchChat = document.getElementById("search-chat-input");
+  let searchResults = document.getElementById("search-results");
+  let createChatForm = document.getElementById("create-chat-form");
+  let messageForm = document.getElementById("message-form");
+  let messageInput = document.getElementById("message-input");
 
   const socket = io();
 
-  //-----------------------------------------------------------
-  //update the local array and the UI
+  // Fetch the current user's email via Axios
+  const fetchUserIdEmail = async () => {
+    const {
+      data: { id, email },
+    } = await axios.get("/getUserIdEmail");
+    currentUserId = id;
+    currentUserEmail = email;
+  };
+
+  // Call fetchUserId on page load
+  await fetchUserIdEmail();
 
   //-----------------------------------------------------------
   //set the impossible button based on how many elements the selectedUsers has
@@ -80,25 +66,15 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     } else {
       if (selectedUsers.size !== 0) {
-        if (addUsersToGroupButton.classList.contains("impossible-create-btn"))
+        if (addUsersToGroupButton.classList.contains("impossible-create-btn")) {
           addUsersToGroupButton.classList.remove("impossible-create-btn");
+        } else addUsersToGroupButton.classList.remove("impossible-create-btn");
       } else {
         if (!addUsersToGroupButton.classList.contains("impossible-create-btn"))
           addUsersToGroupButton.classList.add("impossible-create-btn");
       }
     }
   };
-
-  // Fetch the current user's email via Axios
-  const fetchUserEmail = async () => {
-    const {
-      data: { email },
-    } = await axios.get("/getEmail");
-    currentUserEmail = email;
-  };
-
-  // Call fetchUserEmail on page load
-  fetchUserEmail();
 
   // Funzione per cercare utenti
   const searchUsers = async (query) => {
@@ -140,6 +116,7 @@ document.addEventListener("DOMContentLoaded", function () {
   //load all the personal chats
   const loadChats = async (num, val) => {
     let chatsCompleted;
+
     if (num === 0) {
       const response = await axios.get("/chat/getChats");
       chatsCompleted = response.data.chatsCompleted;
@@ -147,11 +124,15 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await axios.get(`/chat/searchChats?chat=${val}`);
       chatsCompleted = response.data.chatsCompleted;
     }
+    console.log(chatsCompleted);
 
     chatList.innerHTML = "";
     chatsCompleted.forEach((chat) => {
       const li = document.createElement("li");
-      li.className = "chat-item";
+
+      if (num === 3 && chat._id === currentChatId) {
+        li.className = "chat-item selected";
+      } else li.className = "chat-item";
       li.id = chat._id;
 
       if (chat.isGroup) {
@@ -189,7 +170,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       //create element for unread messages
       const returnUser = chat.members.find(
-        (user) => user.name === currentUserEmail
+        (user) => user.userId === currentUserId
       );
 
       //check if the result is empty and if are any messages unread
@@ -212,11 +193,13 @@ document.addEventListener("DOMContentLoaded", function () {
   //handle the change of the selected chat
   const handleChatSelection = async (id, liElement) => {
     document.querySelectorAll(".chat-list li").forEach((item) => {
-      item.classList.remove("selected");
+      if (item.classList.contains("selected"))
+        item.classList.remove("selected");
     });
 
     if (liElement) {
       unreadMessElement = liElement.querySelector(".unread-count");
+
       if (unreadMessElement) {
         unreadMessElement.remove();
         await axios.patch(`/chat/removeUnreadMess/${liElement.id}`);
@@ -235,7 +218,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const sendMessage = async (message, typeMessage) => {
     // Save message to the database
     const {
-      data: { chatIsGroup },
+      data: { emailUser, chatIsGroup },
     } = await axios.post("/chat/messages", {
       message,
       currentChatId,
@@ -247,8 +230,9 @@ document.addEventListener("DOMContentLoaded", function () {
       socket.emit("sendMessage", {
         message,
         currentChatId,
-        createdBy: currentUserEmail,
+        createdBy: currentUserId,
         typeOfChat: chatIsGroup,
+        currentUserEmail: emailUser,
       });
     } else {
       // Emit the message to the server
@@ -318,7 +302,7 @@ document.addEventListener("DOMContentLoaded", function () {
     groupSettings.classList.remove("hideSettings");
 
     //display every message
-    messages.forEach(({ message, createdBy }, index) => {
+    messages.forEach(({ message, createdBy, createdByEmail }, index) => {
       messageContainer = document.createElement("div");
 
       // Crea il contenitore per il testo del messaggio
@@ -331,7 +315,7 @@ document.addEventListener("DOMContentLoaded", function () {
       messageContent.textContent = message;
 
       // Applica la classe in base all'utente
-      if (createdBy === currentUserEmail) {
+      if (createdBy === currentUserId) {
         messageContainer.className = "singleMessage message-right";
       } else {
         messageContainer.className = "singleMessage message-left";
@@ -355,7 +339,7 @@ document.addEventListener("DOMContentLoaded", function () {
           ) {
             // Crea il creatore del messaggio
             messageCreator = document.createElement("div");
-            messageCreator.textContent = createdBy;
+            messageCreator.textContent = createdByEmail;
             messageCreator.className = "creatorName";
             messageText.appendChild(messageCreator);
           }
@@ -397,7 +381,7 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   //dispay all the users available
-  const displayUsers = (users, type) => {
+  const displayUsers = (users, type, chatOwner) => {
     if (type) usersList = popUpGroupSettings.querySelector(".users-list");
     else usersList = document.querySelector(".users-list");
 
@@ -405,18 +389,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     //display all the users
     users.forEach((user) => {
+      let checkbox = null;
+
       // Crea l'elemento principale
       const userItem = document.createElement("div");
       userItem.className = "user-item";
 
-      // Crea il checkbox
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.className = "user-checkbox";
-
       // Crea il label
       const label = document.createElement("label");
-      label.htmlFor = `${user.email}`;
+      label.htmlFor = `${user._id}`;
 
       // Crea l'avatar
       const avatar = document.createElement("span");
@@ -448,10 +429,21 @@ document.addEventListener("DOMContentLoaded", function () {
       // Crea l'icona aggiungi
       const addIcon = document.createElement("span");
 
+      if (chatOwner) {
+        // Crea il checkbox
+        checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "user-checkbox";
+        userItem.appendChild(checkbox);
+      }
+
       if (type) {
         if (user.isAlreadyInGroup) {
-          checkbox.checked = true;
-          checkbox.disabled = true;
+          if (chatOwner) {
+            checkbox.checked = true;
+            checkbox.disabled = true;
+          }
+
           addIcon.className = "user-add-icon";
           addIcon.id = "removeUser";
           addIcon.innerHTML = '<i class="fa-solid fa-trash"></i>';
@@ -466,7 +458,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       // Assembla tutto nell'elemento principale
-      userItem.appendChild(checkbox);
       userItem.appendChild(label);
       userItem.appendChild(addIcon);
       usersList.appendChild(userItem);
@@ -474,10 +465,10 @@ document.addEventListener("DOMContentLoaded", function () {
       const updateSelection = (typeButton) => {
         if (checkbox.checked) {
           checkbox.checked = true;
-          selectedUsers.add(user.email);
+          selectedUsers.add(user._id);
         } else {
           checkbox.checked = false;
-          selectedUsers.delete(user.email);
+          selectedUsers.delete(user._id);
         }
 
         if (typeButton === "createChat") changeImpossibleButton(true);
@@ -495,7 +486,7 @@ document.addEventListener("DOMContentLoaded", function () {
           const {
             data: { success, exists, _id, name },
           } = await axios.post("/chat/createChat", {
-            emailOther: user.email,
+            otherUserId: user._id,
             isGroup: false,
           });
 
@@ -539,7 +530,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 //change the chat selected
                 handleChatSelection(_id, li);
-              }
+              } else handleChatSelection(_id, chatInQuestion);
             }
 
             //remove unread messages
@@ -552,7 +543,9 @@ document.addEventListener("DOMContentLoaded", function () {
           checkbox.checked = false;
           checkbox.disabled = false;
 
-          await axios.patch(`/chat/removeUser/${currentChatId}/${user.email}`);
+          const result = await axios.patch(
+            `/chat/removeUser/${currentChatId}/${user._id}`
+          );
 
           userItemTarget.remove();
 
@@ -564,25 +557,29 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       //------------------------------------------------------
-      checkbox.addEventListener("click", (event) => {
-        event.stopPropagation();
-        userItemTarget = event.target.closest(".user-item");
-        updateSelection(userItemTarget.id);
-      });
-
-      userItem.addEventListener("click", (event) => {
-        userItemTarget = event.target.closest(".user-item");
-        if (!userItemTarget.querySelector(".user-checkbox").disabled) {
-          // Evita doppia esecuzione per checkbox e addIcon
-          if (event.target === checkbox) {
-            return;
-          }
-
-          // need to invert manually because you click on the div and not directly on the checkbox
-          checkbox.checked = !checkbox.checked;
+      if (chatOwner) {
+        checkbox.addEventListener("click", (event) => {
+          event.stopPropagation();
+          userItemTarget = event.target.closest(".user-item");
           updateSelection(userItemTarget.id);
-        }
-      });
+        });
+
+        userItem.addEventListener("click", (event) => {
+          userItemTarget = event.target.closest(".user-item");
+          if (!userItemTarget.querySelector(".user-checkbox").disabled) {
+            // Evita doppia esecuzione per checkbox e addIcon
+            if (event.target === checkbox) {
+              return;
+            }
+
+            // need to invert manually because you click on the div and not directly on the checkbox
+            userItemTarget.querySelector(".user-checkbox").checked =
+              !userItemTarget.querySelector(".user-checkbox").checked;
+
+            updateSelection(userItemTarget.id);
+          }
+        });
+      }
     });
   };
 
@@ -609,10 +606,10 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("messages").appendChild(messageContainer);
     } else {
       if (data.currentChatId === currentChatId) {
-        const { createdBy, typeOfChat } = data;
+        const { createdBy, currentUserEmail, typeOfChat } = data;
 
         //first position the message right or left based on who send it
-        if (createdBy === currentUserEmail) {
+        if (createdBy === currentUserId) {
           await axios.patch(`/chat/unreadCont/${data.currentChatId}`);
           messageContainer.className = "singleMessage message-right";
         } else {
@@ -629,7 +626,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
           if (!supp || supp.id !== createdBy) {
             messageCreator = document.createElement("div");
-            messageCreator.textContent = createdBy;
+            messageCreator.textContent = currentUserEmail;
             messageCreator.className = "creatorName";
             messageText.appendChild(messageCreator);
           } else {
@@ -724,7 +721,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   closePopUpListeners();
 
-  const groupSettingsHtml = ` <div class="popup-header">
+  const groupSettingsHtml_1 = ` <div class="popup-header">
           <h3>Impostazioni del gruppo</h3>
           <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" class="popup-close">
             <path fill="#a259c6" d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"></path>
@@ -735,9 +732,27 @@ document.addEventListener("DOMContentLoaded", function () {
           <h4>Seleziona partecipanti:</h4>
           <div class="users-list"><div class="user-item" id="settingsChat"><input type="checkbox" class="user-checkbox" disabled=""><label for="davidepadurean@gmail.com"><span class="user-avatar"><i class="fas fa-user"></i></span><span class="user-info"><span class="user-name">dave</span><span class="user-email">davidepadurean@gmail.com</span></span></label><span class="user-add-icon" id="removeUser"><i class="fa-solid fa-trash"></i></span></div><div class="user-item" id="settingsChat"><input type="checkbox" class="user-checkbox"><label for="giuliapadurean@gmail.com"><span class="user-avatar"><i class="fas fa-user"></i></span><span class="user-info"><span class="user-name">giulia</span><span class="user-email">giuliapadurean@gmail.com</span></span></label><span></span></div></div>
         </div>
-        <button type="submit" class="addUsers-btn impossible-create-btn">
+        <button type="submit" id="addNewUsersToGroup" class="addUsers-btn impossible-create-btn">
           <i class="fas fa-plus"></i> Aggiungi persone
         </button>
+
+        <button type="submit" class="addUsers-btn" id="exitGroup">
+          <i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i>
+          abbandona il gruppo
+        </button>`;
+
+  const groupSettingsHtml_2 = ` <div class="popup-header">
+          <h3>Impostazioni del gruppo</h3>
+          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" class="popup-close">
+            <path fill="#a259c6" d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"></path>
+          </svg>
+        </div>
+
+        <div class="users-list-container">
+          <h4>Partecipanti:</h4>
+          <div class="users-list"><div class="user-item" id="settingsChat"><label for="davidepadurean@gmail.com"><span class="user-avatar"><i class="fas fa-user"></i></span><span class="user-info"><span class="user-name">dave</span><span class="user-email">davidepadurean@gmail.com</span></span></label><span class="user-add-icon" id="removeUser"><i class="fa-solid fa-trash"></i></span></div><div class="user-item" id="settingsChat"><input type="checkbox" class="user-checkbox"><label for="giuliapadurean@gmail.com"><span class="user-avatar"><i class="fas fa-user"></i></span><span class="user-info"><span class="user-name">giulia</span><span class="user-email">giuliapadurean@gmail.com</span></span></label><span></span></div></div>
+        </div>
+        
 
         <button type="submit" class="addUsers-btn" id="exitGroup">
           <i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i>
@@ -760,53 +775,80 @@ document.addEventListener("DOMContentLoaded", function () {
           esci dalla chat
         </button>`;
 
-  const loadAllEventListeners = () => {
-    // Ricollega tutti gli event listener come all'avvio
-    // Listener per cercare una chat
-    searchChat.addEventListener("input", async (event) => {
-      const query = event.target.value.trim();
-      if (query !== "") loadChats(1, query);
-      else loadChats(0, "");
+  // Ricollega tutti gli event listener come all'avvio
+  // Listener per cercare una chat
+  searchChat.addEventListener("input", async (event) => {
+    const query = event.target.value.trim();
+    console.log(query);
+
+    if (query !== "") loadChats(1, query);
+    else loadChats(0, "");
+  });
+
+  // listener to create a new chat
+  createChatForm.addEventListener("submit", async (event) => {
+    event.preventDefault(); //to prevent the default action of the form
+    const nameGroup = searchInput.value; //get the name group input
+
+    selectedUsers.add(currentUserId); //add the id of the person who wants to create the group
+    const {
+      data: { success, _id },
+    } = await axios.post("/chat/createChat", {
+      name: nameGroup,
+      isGroup: true,
+      membersToAdd: Array.from(selectedUsers),
     });
 
-    // Invio messaggio dal form
-    if (messageForm && messageInput) {
-      messageForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        if (currentChatId && messageInput.value.trim()) {
-          sendMessage(messageInput.value.trim(), true);
-          messageInput.value = "";
-        }
-      });
+    if (success) {
+      popUp.classList.remove("openPopUp");
+      selectedUsers.clear(); //delete all the elements
+      changeImpossibleButton(true); //to restore the impoossible button
+
+      //load the chats
+      await loadChats(0, "");
+
+      //change the chat selected
+      handleChatSelection(_id, document.getElementById(_id));
+      searchInput.value = "";
     }
+  });
 
-    // Listener per creare una nuova chat
-    createChatForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const nameGroup = searchInput.value;
+  //event listener to open the pop up
+  openPopUp.addEventListener("click", async (e) => {
+    popUp.classList.add("openPopUp");
 
-      selectedUsers.add(currentUserEmail);
+    //get all users
+    const {
+      data: { users },
+    } = await axios.get("/getAllUsers");
 
+    displayUsers(users, false, true);
+  });
+
+  //group settings
+  groupSettings.addEventListener("click", async (e) => {
+    if (chatIsGroup) {
       const {
-        data: { success, _id },
-      } = await axios.post("/chat/createChat", {
-        name: nameGroup,
-        isGroup: true,
-        membersToAdd: Array.from(selectedUsers),
-      });
+        data: { chatOwner },
+      } = await axios.get(`chat/chatOwner/${currentChatId}`);
 
-      if (success) {
-        popUp.classList.remove("openPopUp");
-        selectedUsers.clear(); //delete all the elements
-        changeImpossibleButton(true); //to restore the impoossible button
+      if (chatOwner) popUpGroupSettings.innerHTML = groupSettingsHtml_1;
+      else popUpGroupSettings.innerHTML = groupSettingsHtml_2;
+      addUsersToGroupButton = document.querySelector(".addUsers-btn");
 
-        //load the chats
-        await loadChats(0, "");
+      //get all users
+      const {
+        data: { users },
+      } = await axios.get(`/getAllUsersGroup/${currentChatId}/${chatOwner}`);
 
-        //change the chat selected
-        handleChatSelection(_id, document.getElementById(_id));
-      }
-    });
+      displayUsers(users, true, chatOwner);
+    } else {
+      popUpGroupSettings.innerHTML = singleChatSettingsHtml;
+    }
+    popUpGroupSettings.classList.add("openPopUp");
+
+    closePopUpListeners();
+    buttonQuitChat();
 
     addUsersToGroupButton.addEventListener("click", async (event) => {
       popUpGroupSettings.classList.remove("openPopUp");
@@ -820,61 +862,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
       selectedUsersArray.forEach((user) => {
         sendMessage(
-          `${currentUserEmail} was added to the group by ${user}`,
+          `${currentUserEmail} was added to the group by ${currentUserEmail}`,
           false
         );
       });
       selectedUsers.clear(); //delete all the elements
       changeImpossibleButton(false); //to restore the impoossible button
     });
-
-    //event listener to open the pop up
-    openPopUp.addEventListener("click", async (e) => {
-      popUp.classList.add("openPopUp");
-
-      //get all users
-      const {
-        data: { users },
-      } = await axios.get("/getAllUsers");
-
-      displayUsers(users, false);
-    });
-
-    //group settings
-    groupSettings.addEventListener("click", async (e) => {
-      popUpGroupSettings.classList.add("openPopUp");
-
-      if (chatIsGroup) {
-        popUpGroupSettings.innerHTML = groupSettingsHtml;
-
-        //get all users
-        const {
-          data: { users },
-        } = await axios.get(`/getAllUsersGroup/${currentChatId}`);
-
-        displayUsers(users, true);
-      } else {
-        popUpGroupSettings.innerHTML = singleChatSettingsHtml;
-      }
-      closePopUpListeners();
-      buttonQuitChat();
-    });
-  };
-
-  // Funzione globale da eseguire quando si torna su /chat
-  window.onReturnToChat = function () {
-    // Reinizializza tutti gli elementi e listener della chat
-    loadAllElements();
-    loadAllEventListeners();
-
-    closePopUpListeners();
-    // Ricarica le chat
-    loadChats(0, "");
-  };
-
-  // load the chats at every refresh page
+  });
   loadChats(0, "");
-  // Call loadAllElements when DOM is ready
-  loadAllElements();
-  loadAllEventListeners();
 });

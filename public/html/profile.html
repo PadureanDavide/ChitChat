@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Le mie Chat</title>
+    <meta name="user-email" content="{{USER_EMAIL}}" />
+    <link rel="stylesheet" href="/css/root.css" />
+    <link rel="stylesheet" href="/css/navMenu.css" />
+    <link rel="stylesheet" href="/css/profile.css" />
+    <link rel="stylesheet" href="/css/chat.css" />
+    <link rel="stylesheet" href="/css/popUp.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="popUpResult"></div>
+
+    <div class="nav-menu">
+      <a href="/chat">
+        <i
+          class="fa-solid fa-comment scaleIncrease"
+          id="chatUser"
+          style="font-size: 1.5em"
+        ></i>
+      </a>
+      <a href="/profile">
+        <i
+          class="fa-solid fa-id-badge scaleIncrease"
+          id="profileUser"
+          style="font-size: 1.5em"
+        ></i>
+      </a>
+    </div>
+    <div class="chat-card">
+      <div class="user-data-section">
+        <div>
+          <span class="headers">name</span>
+          <span id="spanName"></span>
+        </div>
+        <div>
+          <span class="headers">email</span>
+          <span id="spanEmail"></span>
+        </div>
+      </div>
+      <div class="cont-rest-profile">
+        <div class="profile-section">
+          <h2>Cambia Nome</h2>
+          <form id="change-name-form">
+            <div class="form-group">
+              <label for="new-name">Nuovo Nome</label>
+              <input type="text" id="new-name" name="new-name" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Aggiorna Nome</button>
+          </form>
+        </div>
+
+        <div class="profile-section">
+          <h2>Cambia Password</h2>
+          <form id="change-password-form">
+            <div class="form-group">
+              <label for="current-password">Password Attuale</label>
+              <input
+                type="password"
+                id="current-password"
+                name="current-password"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="new-password">Nuova Password</label>
+              <input
+                type="password"
+                id="new-password"
+                name="new-password"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="confirm-password">Conferma Nuova Password</label>
+              <input
+                type="password"
+                id="confirm-password"
+                name="confirm-password"
+                required
+              />
+            </div>
+            <button type="submit" class="btn btn-primary">
+              Aggiorna Password
+            </button>
+          </form>
+        </div>
+
+        <div class="logout-section">
+          <button id="logout-btn" class="btn btn-danger">Logout</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/popUp.js"></script>
+    <script src="/js/profile.js"></script>
+  </body>
+</html>

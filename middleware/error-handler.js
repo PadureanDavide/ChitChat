@@ -4,17 +4,18 @@ const { StatusCodes } = require("http-status-codes");
 const errorhandler = (err, req, res, next) => {
   console.log(err);
   let customError = {
-    statusCode: err.StatusCode || StatusCodes.INTERNAL_SERVER_ERROR,
+    statusCode: err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
     msg: err.message || "something went wront, please try again",
   };
 
+  //when we create/update a element in the db
   if (err.name === "ValidationError") {
     customError.msg = Object.values(err.errors)
       .map((item) => item.message)
       .join(", ");
-    customError.statusCode = 400;
   }
 
+  //email already exists
   if (err.code === 11000) {
     customError.msg =
       "this email is already used, please login or user another one";

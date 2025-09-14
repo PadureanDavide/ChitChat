@@ -2,16 +2,21 @@
 <html>
   <head>
     <title>Registrazione</title>
+    <link rel="stylesheet" href="/css/root.css" />
     <link rel="stylesheet" href="/css/login.css" />
+    <link rel="stylesheet" href="/css/popUp.css" />
+
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
   </head>
   <body>
+    <div class="popUpResult"></div>
+
     <div class="login-container">
       <h1><i class="fas fa-user-plus"></i> Registrati</h1>
-      <form action="/register" method="POST">
+      <form id="register">
         <div class="input-group">
           <i class="fas fa-user"></i>
           <input type="text" name="name" placeholder="Username" required />
@@ -35,5 +40,8 @@
         </p>
       </form>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="/js/popUp.js"></script>
+    <script src="/js/Register.js"></script>
   </body>
 </html>

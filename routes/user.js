@@ -5,15 +5,15 @@ const {
   login,
   registerIndex,
   register,
-  getEmail,
+  getUserIdEmail,
   getAllUsers,
   getAllUsersGroup,
 } = require("../controllers/user");
 
 router.route("/register").get(registerIndex).post(register);
 router.route("/login").get(loginIndex).post(login);
-router.route("/getEmail").get(getEmail);
+router.route("/getUserIdEmail").get(getUserIdEmail);
 router.route("/getAllUsers").get(getAllUsers);
-router.route("/getAllUsersGroup/:chatId").get(getAllUsersGroup);
+router.route("/getAllUsersGroup/:chatId/:chatOwner").get(getAllUsersGroup);
 
 module.exports = router;

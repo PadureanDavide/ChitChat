@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Le mie Chat</title>
     <meta name="user-email" content="{{USER_EMAIL}}" />
-    <link rel="stylesheet" href="/css/chat.css" />
     <link rel="stylesheet" href="/css/navMenu.css" />
-    <link rel="stylesheet" href="/css/profile.css" />
+    <link rel="stylesheet" href="/css/chat.css" />
 
     <link
       rel="stylesheet"
@@ -20,16 +19,20 @@
   </head>
   <body>
     <div class="nav-menu">
-      <i
-        class="fa-solid fa-comment scaleIncrease"
-        id="chatUser"
-        style="font-size: 1.5em"
-      ></i>
-      <i
-        class="fa-solid fa-id-badge scaleIncrease"
-        id="profileUser"
-        style="font-size: 1.5em"
-      ></i>
+      <a href="/chat">
+        <i
+          class="fa-solid fa-comment scaleIncrease"
+          id="chatUser"
+          style="font-size: 1.5em"
+        ></i>
+      </a>
+      <a href="/profile">
+        <i
+          class="fa-solid fa-id-badge scaleIncrease"
+          id="profileUser"
+          style="font-size: 1.5em"
+        ></i>
+      </a>
     </div>
     <div class="chat-card">
       <!-- POPUP PER CREAZIONE CHAT DI GRUPPO -->
@@ -241,7 +244,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script type="module" src="/js/chat.js"></script>
-    <script type="module" src="/js/profile.js"></script>
+    <script src="/js/chat.js"></script>
   </body>
 </html>

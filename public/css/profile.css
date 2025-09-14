@@ -1,3 +1,25 @@
+.chat-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.user-data-section,
+.user-data-section div {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-data-section div {
+  margin-bottom: 20px;
+}
+
+.user-data-section .headers {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
 .profile-container {
   padding: 2em;
   max-width: 600px;
@@ -23,7 +45,7 @@
 }
 
 .form-group {
-  margin-bottom: 1.5em;
+  margin-bottom: 1.2em;
 }
 
 .form-group label {
@@ -96,6 +118,26 @@
   font-size: 0.9rem;
   margin-top: 0.5em;
   display: none;
+}
+
+.profile-section {
+  background: var(--white);
+  padding: 0 40px 10px;
+  border-radius: 15px;
+  box-shadow: var(--shadow);
+  width: 40dvw;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.profile-section h2 {
+  color: var(--text-color);
+  margin-bottom: 1em;
+  font-size: 1.5em;
+}
+
+.logout-section {
+  text-align: center;
+  padding-top: 1.5em;
 }
 
 .success-message {

@@ -16,7 +16,7 @@ const ChatSchema = new mongoose.Schema(
     },
     members: [
       {
-        name: {
+        userId: {
           type: String,
           required: true,
         },

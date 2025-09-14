@@ -7,7 +7,6 @@ const UserSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, "please provide name"],
-      minlength: 3,
       maxlength: 50,
     },
     email: {
@@ -24,7 +23,7 @@ const UserSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, "please provide password"],
-      minlength: 3,
+      minlength: [6, "password must be at lease 6 characters long"],
     },
     refreshTokens: [
       {
@@ -37,19 +36,17 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-//to hash the password
 UserSchema.pre("save", async function () {
-  //10 means the number of characters of the hased password
-  const salt = await bcrypt.genSalt(10);
+  // Questo if mancante causa re-hashing non necessario
+  if (!this.isModified("password")) return;
 
-  //we use this to point to the password above
+  const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
 
 //compare the password given with the one saved on the database
 UserSchema.methods.comparePassword = async function (candidatePassword) {
-  const isMatch = await bcrypt.compare(candidatePassword, this.password);
-  return isMatch;
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
 module.exports = mongoose.model("User", UserSchema);

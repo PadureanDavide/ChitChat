@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "nodemon app.js",
+    "build": "gulp build",
+    "dev": "gulp dev"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +24,9 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "del": "^8.0.0",
+    "gulp": "^4.0.2",
+    "gulp-file-include": "^2.3.0",
     "nodemon": "^3.1.10"
   }
 }

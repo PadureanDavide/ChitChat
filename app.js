@@ -29,10 +29,12 @@ app.use(auth);
 //get all the paths
 const authUser = require("./routes/user");
 const chat = require("./routes/chat");
+const profile = require(".//routes/profile");
 
 //router
 app.use("/", authUser);
 app.use("/chat", chat);
+app.use("/profile", profile);
 
 //-------------------------------------------------------------------------------------------------------------
 

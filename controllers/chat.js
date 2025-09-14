@@ -12,11 +12,10 @@ const getChatCompleted = async (req, res, val) => {
       if (!chat.isGroup) {
         //to get the name and email of the other person in the single chat
         const otherMemberEmail = chat.members.find(
-          (member) => member.name !== req.user.email
+          (member) => !req.user._id.equals(member.userId)
         );
-
         const nameEmail = await User.findOne({
-          email: otherMemberEmail.name,
+          _id: otherMemberEmail.userId,
         }).select("name email");
 
         if (!nameEmail)
@@ -55,7 +54,7 @@ const getChats = async (req, res) => {
   const chats = await Chat.find({
     members: {
       $elemMatch: {
-        name: req.user.email,
+        userId: req.user._id,
         exitFromSingleChat: false,
       },
     },
@@ -75,16 +74,17 @@ const createChat = async (req, res) => {
   if (!req.body.isGroup) {
     const chatExists = await Chat.findOne({
       isGroup: false,
-      "members.name": {
-        $all: [req.user.email, req.body.emailOther],
+      "members.userId": {
+        $all: [req.user._id, req.body.otherUserId],
       },
     });
 
     //if the chat exists, then execute only the res
     if (chatExists) {
       const nameUser = await User.findOne({
-        email: req.body.emailOther,
+        _id: req.body.otherUserId,
       }).select("name");
+
       res.status(StatusCodes.OK).json({
         success: true,
         exists: true,
@@ -94,15 +94,15 @@ const createChat = async (req, res) => {
     } else {
       //only if the chat do not exist
       const chat = await Chat.create({
-        createdBy: req.user.email,
+        createdBy: req.user._id,
         members: [
           {
-            name: req.user.email,
+            userId: req.user._id,
             numUnreadMessages: 0,
             exitFromSingleChat: false,
           },
           {
-            name: req.body.emailOther,
+            userId: req.body.otherUserId,
             numUnreadMessages: 0,
             exitFromSingleChat: false,
           },
@@ -117,14 +117,14 @@ const createChat = async (req, res) => {
     }
   } else {
     //to create group
-    const members = req.body.membersToAdd.map((email) => ({
-      name: email, // Usa l'email come nome, oppure potresti voler cercare il nome utente
+    const members = req.body.membersToAdd.map((newUserId) => ({
+      userId: newUserId, // Usa l'email come nome, oppure potresti voler cercare il nome utente
       numUnreadMessages: 0,
       exitFromSingleChat: false,
     }));
 
     const chat = await Chat.create({
-      createdBy: req.user.email,
+      createdBy: req.user._id,
       isGroup: true,
       nameChat: req.body.name,
       members: members,
@@ -160,11 +160,11 @@ const searchChat = async (req, res) => {
       {
         isGroup: true,
         nameChat: { $regex: chat, $options: "i" },
-        "members.name": req.user.email,
+        "members.userId": req.user.id,
       },
       {
         isGroup: false,
-        "members.name": { $regex: req.user.email },
+        "members.userId": { $regex: req.user.id },
         exitFromSingleChat: false,
       },
     ],
@@ -173,6 +173,14 @@ const searchChat = async (req, res) => {
   const chatsCompleted = await getChatCompleted(req, res, chats);
 
   res.status(StatusCodes.OK).json({ chatsCompleted });
+};
+
+const chatOwner = async (req, res) => {
+  const { chatId } = req.params;
+
+  const chat = await Chat.findOne({ _id: chatId, createdBy: req.user.id });
+  if (chat) res.status(StatusCodes.OK).json({ chatOwner: true });
+  else res.status(StatusCodes.OK).json({ chatOwner: false });
 };
 
 // Save a new message to the database
@@ -187,14 +195,14 @@ const saveMessage = async (req, res) => {
   if (typeMessage) {
     newMessage = await Message.create({
       message: message,
-      createdBy: req.user.email,
+      createdBy: req.user._id,
       chatAt: currentChatId,
     });
 
     const validExitFromSingleChat = await Chat.findOneAndUpdate(
       {
         _id: currentChatId,
-        "members.name": req.user.email,
+        "members.userId": req.user._id,
       },
       {
         $set: {
@@ -225,23 +233,41 @@ const saveMessage = async (req, res) => {
 
   res
     .status(StatusCodes.CREATED)
-    .json({ success: true, chatIsGroup: chat.isGroup });
+    .json({ emailUser: req.user.email, chatIsGroup: chat.isGroup });
 };
 
 // Get all messages for a specific chat
 const getMessages = async (req, res) => {
   const { chatAt } = req.params;
 
+  if (!chatAt) {
+    throw new BadRequestError("need to provide a chat id");
+  }
+
   const chat = await Chat.findOne({ _id: chatAt });
 
   if (!chat)
     throw new BadRequestError("error during finding the chat selected");
 
-  if (!chatAt) {
-    throw new BadRequestError("need to provide a chat id");
-  }
+  let messages = await Message.find({ chatAt }).sort({ createdAt: 1 });
 
-  const messages = await Message.find({ chatAt }).sort({ createdAt: 1 });
+  messages = await Promise.all(
+    messages.map(async (message) => {
+      if (message.createdBy === "SERVER NOTIFICATION") {
+        return {
+          ...message.toObject(),
+        };
+      } else {
+        let sender = await User.findOne({ _id: message.createdBy }).select(
+          "email"
+        );
+        return {
+          ...message.toObject(),
+          createdByEmail: sender.email,
+        };
+      }
+    })
+  );
 
   if (!messages) {
     throw new BadRequestError("error during get all messages for a chat");
@@ -262,7 +288,8 @@ const incUnreadMess = async (req, res) => {
   if (!chat) throw new BadRequestError("chat not found");
 
   chat.members.forEach((member) => {
-    if (member.name !== req.user.email) {
+    if (!req.user._id.equals(member.userId)) {
+      //need ot use equals because req.user._id is a object and member.userId is a string
       member.numUnreadMessages += 1;
     }
   });
@@ -279,7 +306,7 @@ const removeUnreadMess = async (req, res) => {
   const result = await Chat.findOneAndUpdate(
     {
       _id: chatId,
-      "members.name": req.user.email,
+      "members.userId": req.user._id,
     },
     {
       $set: {
@@ -300,13 +327,13 @@ const removeUnreadMess = async (req, res) => {
 };
 
 const removeUserFromGroup = async (req, res) => {
-  const { chatId, userEmail } = req.params;
+  const { chatId, userIdToRemove } = req.params;
 
   const result = await Chat.findByIdAndUpdate(
     chatId,
     {
       $pull: {
-        members: { name: userEmail },
+        members: { userId: userIdToRemove },
       },
     },
     { new: true }
@@ -322,20 +349,20 @@ const addUsersToGroup = async (req, res) => {
 
   if (!chat || !chat.isGroup)
     throw new BadRequestError(
-      "passed a id chat that is no available or is a single chat"
+      "passed a id chat that is not available or is a single chat"
     );
 
-  if (chat.createdBy === req.user.email) {
+  if (chat.createdBy === req.user.id) {
     //check if the new memebers are real persons
     const existingUsers = await User.find({
-      email: { $in: newMembers },
+      _id: { $in: newMembers },
     }).select("-refreshTokens");
 
     if (!existingUsers || existingUsers.size !== newMembers.size)
       throw new BadRequestError("some users are not real");
 
-    const newMembersCompleted = newMembers.map((email) => ({
-      name: email, // Usa l'email come nome, oppure potresti voler cercare il nome utente
+    const newMembersCompleted = newMembers.map((newUserId) => ({
+      userId: newUserId, // Usa l'email come nome, oppure potresti voler cercare il nome utente
       numUnreadMessages: 0,
       exitFromSingleChat: false,
     }));
@@ -430,4 +457,5 @@ module.exports = {
   removeUserFromGroup,
   addUsersToGroup,
   deleteChat,
+  chatOwner,
 };

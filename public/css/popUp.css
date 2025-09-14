@@ -1,0 +1,33 @@
+.popUpResult {
+  position: fixed;
+  top: 0;
+  height: 10dvh;
+  width: fit-content;
+  padding: 0 30px;
+  background-color: green;
+  transform: translateY(-100%);
+  z-index: 999;
+  transition: 0.5s ease;
+  border-radius: 20px;
+  background-color: var(--white);
+  border: 2px solid green;
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.showPopUpSuccess {
+  transform: translateY(15%);
+}
+
+.showPopUpDenied {
+  transform: translateY(15%);
+  border: 2px solid red;
+}
+
+/*classes to add or remove*/
+.inputWrong {
+  border: 1px solid red !important;
+}
