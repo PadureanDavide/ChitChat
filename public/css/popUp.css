@@ -1,33 +1,69 @@
 .popUpResult {
   position: fixed;
-  top: 0;
-  height: 10dvh;
-  width: fit-content;
-  padding: 0 30px;
-  background-color: green;
-  transform: translateY(-100%);
-  z-index: 999;
-  transition: 0.5s ease;
-  border-radius: 20px;
-  background-color: var(--white);
-  border: 2px solid green;
+  top: 16px;
+  left: 50%;
+  z-index: 2000;
   display: flex;
   align-items: center;
-  font-size: 1.1rem;
-  font-weight: bold;
+  justify-content: center;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 32px));
+  min-height: 52px;
+  padding: 12px 20px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 32px rgba(34, 20, 42, 0.18);
+  color: #34303a;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.45;
   text-align: center;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 24px));
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    visibility 0.25s ease;
+}
+
+.showPopUpSuccess,
+.showPopUpDenied {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
 }
 
 .showPopUpSuccess {
-  transform: translateY(15%);
+  border-color: #a8d9bd;
+  background: #f1fbf5;
+  color: #17653a;
 }
 
 .showPopUpDenied {
-  transform: translateY(15%);
-  border: 2px solid red;
+  border-color: #efb1b7;
+  background: #fff5f5;
+  color: #9c2634;
 }
 
-/*classes to add or remove*/
 .inputWrong {
-  border: 1px solid red !important;
+  border: 1px solid #dc3545 !important;
+}
+
+@media (max-width: 480px) {
+  .popUpResult {
+    top: 12px;
+    max-width: calc(100vw - 24px);
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popUpResult {
+    transition: none;
+  }
 }

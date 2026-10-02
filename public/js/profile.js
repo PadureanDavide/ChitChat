@@ -32,14 +32,21 @@ getEmailName();
 formName.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const {
-    data: { success },
-  } = await axios.patch(`profile/updateNameUser/${newName.value.trim()}`);
+  try {
+    const {
+      data: { success },
+    } = await axios.patch(`profile/updateNameUser/${newName.value.trim()}`);
 
-  if (success) {
-    popUpMessage("name updated succesfully", true);
-    getEmailName();
-    newName.value = "";
+    if (success) {
+      popUpMessage("Name updated successfully", true);
+      getEmailName();
+      newName.value = "";
+    }
+  } catch (error) {
+    popUpMessage(
+      error.response?.data?.msg || "Unable to update name",
+      false,
+    );
   }
 });
 
@@ -61,19 +68,18 @@ formPassword.addEventListener("submit", async (event) => {
       popUpMessage("The passwords do not match", false);
     }
   } catch (error) {
-    // Gestione degli errori dalla response
     if (error.response) {
       const { statusCode, msg } = error.response.data;
 
       if (statusCode === 401 && msg === "Current password is incorrect") {
         invalidParamForm(currentPassword, false);
-        popUpMessage(msg, false);
       }
 
       if (
         statusCode === 400 &&
         msg === "password must be at lease 6 characters long"
       ) {
+        invalidParamForm(newPassword, false);
       }
 
       if (
@@ -82,7 +88,6 @@ formPassword.addEventListener("submit", async (event) => {
       ) {
         invalidParamForm(newPassword, false);
         invalidParamForm(confirmPassword, false);
-        popUpMessage(msg, false);
       }
 
       if (
@@ -92,16 +97,11 @@ formPassword.addEventListener("submit", async (event) => {
         invalidParamForm(currentPassword, false);
         invalidParamForm(newPassword, false);
         invalidParamForm(confirmPassword, false);
-        popUpMessage(msg, false);
       }
 
-      if (
-        statusCode === 500 &&
-        msg === "password must be at lease 6 characters long"
-      ) {
-        invalidParamForm(newPassword, false);
-        popUpMessage(msg, false);
-      }
+      popUpMessage(msg || "Impossibile aggiornare la password", false);
+    } else {
+      popUpMessage("Network error: unable to update password", false);
     }
   }
 });

@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
         loginForm.elements["password"].value = "";
 
         invalidParamForm(loginForm.elements["password"].parentElement, false);
-        popUpMessage("wrong password", false);
+        popUpMessage("Incorrect password", false);
       }
     }
   });

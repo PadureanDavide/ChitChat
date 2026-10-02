@@ -1,68 +1,98 @@
 const User = require("../models/user");
-const { UnauthenticatedError } = require("../errors");
+const { StatusCodes } = require("http-status-codes");
 const { createJWTAccess, verifyToken } = require("../utils/generateTokens");
+const getAuthCookieOptions = require("../utils/authCookies");
 
-const checkCookie = async (req, token) => {
+const checkCookie = async (req, token, expectedType) => {
   if (!token) return false;
 
-  //try catch used to catch a error in verfy token (means the token is invalid)
+  let decoded;
   try {
-    const decoded = verifyToken(token);
-    const user = await User.findById(decoded.userId).select("-password");
-
-    if (!user) return false;
-
-    //add the user to the request
-    req.user = user;
-    return true;
+    decoded = verifyToken(token, expectedType);
   } catch (error) {
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError" ||
+      error.name === "NotBeforeError"
+    ) {
+      return false;
+    }
+    throw error;
+  }
+
+  const user = await User.findById(decoded.userId).select("-password");
+  if (
+    !user ||
+    !decoded.sessionId ||
+    !user.activeSessions.includes(decoded.sessionId)
+  ) {
     return false;
   }
+
+  if (expectedType === "refresh" && !user.refreshTokens.includes(token)) {
+    return false;
+  }
+
+  req.user = user;
+  req.auth = decoded;
+  return true;
 };
 
-//-----------------------------------------------------------------------------------
+const issueAccessCookie = (res, user, sessionId) => {
+  const token = createJWTAccess(user._id, user.name, sessionId);
+  res.cookie("jwtAccess", token, {
+    ...getAuthCookieOptions(),
+    maxAge: 60 * 60 * 1000,
+  });
+};
+
+const isApiRequest = (req) => {
+  const accept = req.get("accept") || "";
+  return (
+    req.xhr ||
+    req.path.startsWith("/api/") ||
+    accept.split(",").some((type) => type.trim().startsWith("application/json"))
+  );
+};
+
 const auth = async (req, res, next) => {
   const tokenAccess = req.cookies.jwtAccess;
   const tokenRefresh = req.cookies.jwtRefresh;
 
-  var hasValidRefresh = null;
-
   const publicPaths = ["/login", "/register"];
 
-  // check if the path is public
+  // Redirect authenticated users away from public pages.
   if (publicPaths.includes(req.path)) {
-    // check if the cookies contains something
-    if (tokenAccess && tokenRefresh) {
-      hasValidRefresh = await checkCookie(req, tokenRefresh);
-
-      if ((await checkCookie(req, tokenAccess)) && hasValidRefresh) {
-        return res.redirect("/chat");
-      }
+    if (await checkCookie(req, tokenAccess, "access")) {
+      return res.redirect("/chat");
     }
+
+    if (await checkCookie(req, tokenRefresh, "refresh")) {
+      issueAccessCookie(res, req.user, req.auth.sessionId);
+      return res.redirect("/chat");
+    }
+
     return next();
   }
 
-  // for protected paths
-  //need to check the access token
-  hasValidRefresh = await checkCookie(req, tokenRefresh);
-  if ((await checkCookie(req, tokenAccess)) && hasValidRefresh) {
+  if (await checkCookie(req, tokenAccess, "access")) {
     return next();
   }
 
-  // if the access token is invalid, then check only the refresh token
-  //if it is, then update the cookie access and continue with the code
-  if (hasValidRefresh) {
-    newAccessToken = createJWTAccess(req.user._id, req.user.name);
-    res.cookie("jwtAccess", newAccessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      maxAge: 60 * 60 * 1000,
-    });
+  if (await checkCookie(req, tokenRefresh, "refresh")) {
+    issueAccessCookie(res, req.user, req.auth.sessionId);
     return next();
   }
 
-  //if any token is valid, then go back to /login
+  if (isApiRequest(req)) {
+    return res
+      .status(StatusCodes.UNAUTHORIZED)
+      .json({
+        statusCode: StatusCodes.UNAUTHORIZED,
+        msg: "Authentication required",
+      });
+  }
+
   return res.redirect("/login");
 };
 

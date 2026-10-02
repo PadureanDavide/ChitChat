@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
         e.response.data.msg === "password must be at lease 6 characters long"
       ) {
         registerForm.elements["password"].value = "";
-        popUpMessage(e.response.data.msg, false);
+        popUpMessage("Password must be at least 6 characters long", false);
         invalidParamForm(
           registerForm.elements["password"].parentElement,
           false
@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
         e.response.data.msg ===
         "this email is already used, please login or user another one"
       ) {
-        popUpMessage(e.response.data.msg, false);
+        popUpMessage("This email is already registered. Please log in.", false);
         invalidParamForm(registerForm.elements["email"].parentElement, false);
       }
     }

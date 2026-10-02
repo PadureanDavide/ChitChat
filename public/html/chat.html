@@ -1,9 +1,9 @@
-<!DOCTYPE html>
-<html lang="it">
+<!doctype html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Le mie Chat</title>
+    <title>My Chats</title>
     <meta name="user-email" content="{{USER_EMAIL}}" />
     <link rel="stylesheet" href="/css/navMenu.css" />
     <link rel="stylesheet" href="/css/chat.css" />
@@ -35,10 +35,16 @@
       </a>
     </div>
     <div class="chat-card">
-      <!-- POPUP PER CREAZIONE CHAT DI GRUPPO -->
-      <div class="popUpNewChat">
+      <div class="popup-backdrop" aria-hidden="true"></div>
+      <div
+        class="popUpNewChat"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Create a new group chat"
+        tabindex="-1"
+      >
         <div class="popup-header">
-          <h3>Crea Nuova Chat di Gruppo</h3>
+          <h3>Create a New Group Chat</h3>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="30"
@@ -54,9 +60,8 @@
         </div>
 
         <div class="users-list-container">
-          <h4>Seleziona partecipanti:</h4>
-          <div class="users-list">
-            <!-- Lista utenti statica (da popolare dinamicamente in produzione) -->
+          <h4>Select participants:</h4>
+          <div class="users-list" aria-label="Available users">
             <div class="user-item">
               <input type="checkbox" id="user1" class="user-checkbox" />
               <label for="user1">
@@ -66,9 +71,9 @@
                   <span class="user-email">mario.rossi@example.com</span>
                 </span>
               </label>
-              <span class="user-add-icon"
-                ><i class="fas fa-plus-circle"></i
-              ></span>
+              <span class="user-add-icon" aria-hidden="true">
+                <i class="fas fa-plus-circle"></i>
+              </span>
             </div>
 
             <div class="user-item">
@@ -80,9 +85,9 @@
                   <span class="user-email">luigi.verdi@example.com</span>
                 </span>
               </label>
-              <span class="user-add-icon"
-                ><i class="fas fa-plus-circle"></i
-              ></span>
+              <span class="user-add-icon" aria-hidden="true">
+                <i class="fas fa-plus-circle"></i>
+              </span>
             </div>
 
             <div class="user-item">
@@ -94,9 +99,9 @@
                   <span class="user-email">giulia.bianchi@example.com</span>
                 </span>
               </label>
-              <span class="user-add-icon"
-                ><i class="fas fa-plus-circle"></i
-              ></span>
+              <span class="user-add-icon" aria-hidden="true">
+                <i class="fas fa-plus-circle"></i>
+              </span>
             </div>
 
             <div class="user-item">
@@ -108,9 +113,9 @@
                   <span class="user-email">anna.neri@example.com</span>
                 </span>
               </label>
-              <span class="user-add-icon"
-                ><i class="fas fa-plus-circle"></i
-              ></span>
+              <span class="user-add-icon" aria-hidden="true">
+                <i class="fas fa-plus-circle"></i>
+              </span>
             </div>
 
             <div class="user-item">
@@ -122,9 +127,9 @@
                   <span class="user-email">paolo.gialli@example.com</span>
                 </span>
               </label>
-              <span class="user-add-icon"
-                ><i class="fas fa-plus-circle"></i
-              ></span>
+              <span class="user-add-icon" aria-hidden="true">
+                <i class="fas fa-plus-circle"></i>
+              </span>
             </div>
           </div>
         </div>
@@ -134,18 +139,25 @@
             name="nameNewChat"
             type="text"
             id="create-chat-input"
-            placeholder="Nome della chat di gruppo..."
+            placeholder="Group chat name..."
+            aria-label="Group chat name"
             required
           />
           <button type="submit" class="create-btn impossible-create-btn">
-            <i class="fas fa-plus"></i> Crea chat
+            <i class="fas fa-plus"></i> Create chat
           </button>
         </form>
       </div>
 
-      <div class="popUpSettings">
+      <div
+        class="popUpSettings"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Group settings"
+        tabindex="-1"
+      >
         <div class="popup-header">
-          <h3>Impostazioni del gruppo</h3>
+          <h3>Group settings</h3>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="30"
@@ -161,32 +173,29 @@
         </div>
 
         <div class="users-list-container">
-          <h4>Seleziona partecipanti:</h4>
+          <h4>Select participants:</h4>
           <div class="users-list">
             <!-- Lista utenti statica (da popolare dinamicamente in produzione) -->
           </div>
         </div>
         <button type="submit" class="addUsers-btn impossible-create-btn">
-          <i class="fas fa-plus"></i> Aggiungi persone
+          <i class="fas fa-plus"></i> Add people
         </button>
 
         <button type="submit" class="addUsers-btn" id="exitGroup">
           <i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i>
-          esci dal gruppo
+          Leave group
         </button>
       </div>
 
-      <!-- RESTO DEL CODICE ESISTENTE -->
-      <div class="chat-header">
-        <h1><i class="fas fa-comments"></i> RealTimeChat</h1>
-      </div>
       <div class="chat-content">
         <div class="chat-sidebar">
           <div id="search-chat-form" class="search-chat-form">
             <input
               type="text"
               id="search-chat-input"
-              placeholder="Cerca chat..."
+              placeholder="Search chats..."
+              aria-label="Search chats"
             />
           </div>
           <svg
@@ -204,13 +213,12 @@
             />
           </svg>
           <svg
-            class="scaleIncrease"
+            class="scaleIncrease bi bi-plus-circle-fill"
             id="plusButton"
             xmlns="http://www.w3.org/2000/svg"
             width="30"
-            height=" 30"
+            height="30"
             fill="var(--primary-color)"
-            class="bi bi-plus-circle-fill"
             viewBox="0 0 16 16"
           >
             <path
@@ -220,7 +228,7 @@
         </div>
         <div class="chat-main">
           <div class="chat-list-column">
-            <h2 class="chat-list-heading">Le mie Chat</h2>
+            <h2 class="chat-list-heading">My Chats</h2>
             <ul id="chats" class="chat-list"></ul>
           </div>
           <div class="message-column">
@@ -230,11 +238,12 @@
               <input
                 type="text"
                 id="message-input"
-                placeholder="Scrivi un messaggio..."
+                placeholder="Write a message..."
+                aria-label="Write a message"
                 required
               />
               <button type="submit" class="send-btn">
-                <i class="fas fa-paper-plane"></i> Invia
+                <i class="fas fa-paper-plane"></i> Send
               </button>
             </form>
           </div>

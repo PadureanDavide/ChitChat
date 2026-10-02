@@ -1,10 +1,12 @@
 const { StatusCodes } = require("http-status-codes");
+const crypto = require("crypto");
 const User = require("../models/user");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
 const {
   createJWTAccess,
   createJWTRefresh,
 } = require("../utils/generateTokens");
+const getAuthCookieOptions = require("../utils/authCookies");
 const Chat = require("../models/chat");
 
 //required to pass from a html file to another
@@ -62,28 +64,25 @@ const login = async (req, res, next) => {
     //compare the password
     if (await user.comparePassword(password)) {
       //create the access token and the refresh token
-      const tokenAccess = createJWTAccess(user._id, user.name);
-      const tokenRefresh = createJWTRefresh(user._id, user.name);
+      const sessionId = crypto.randomBytes(32).toString("hex");
+      const tokenAccess = createJWTAccess(user._id, user.name, sessionId);
+      const tokenRefresh = createJWTRefresh(user._id, user.name, sessionId);
 
       //add the refresh token to the user
       user.refreshTokens.push(tokenRefresh);
+      user.activeSessions.push(sessionId);
       //to save the changes in the database
       await user.save();
 
       //create cookie and save the token inside
       res.cookie("jwtAccess", tokenAccess, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
+        ...getAuthCookieOptions(),
         maxAge: 60 * 60 * 1000,
       });
 
       //create cookie and save the token inside
       res.cookie("jwtRefresh", tokenRefresh, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        // path: "/refresh", //update only when /refresh path is called
+        ...getAuthCookieOptions(),
         maxAge: 30 * 24 * 60 * 60 * 1000,
       });
       // Genera un token JWT e includi l'email nella risposta

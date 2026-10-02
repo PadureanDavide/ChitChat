@@ -4,6 +4,7 @@
 }
 
 .nav-menu {
+  margin-top: 10px;
   min-height: 50px;
   min-width: 300px;
   border-radius: 20px;

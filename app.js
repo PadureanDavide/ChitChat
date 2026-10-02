@@ -29,7 +29,7 @@ app.use(auth);
 //get all the paths
 const authUser = require("./routes/user");
 const chat = require("./routes/chat");
-const profile = require(".//routes/profile");
+const profile = require("./routes/profile");
 
 //router
 app.use("/", authUser);
@@ -66,7 +66,7 @@ const start = async () => {
   try {
     await connectDB(process.env.MONGO_URI);
     server.listen(port, "0.0.0.0", () =>
-      console.log(`Server is listening: ${port}...`)
+      console.log(`Server is listening: ${port}...`),
     );
   } catch (error) {
     console.log(`ERROR WITH CONNECTION WITH THE SERVER --> ${error}`);

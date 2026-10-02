@@ -7,6 +7,7 @@ const {
   UnauthenticatedError,
   NotFoundError,
 } = require("../errors");
+const getAuthCookieOptions = require("../utils/authCookies");
 
 // to get the html chat file
 const profileIndex = async (req, res) => {
@@ -21,7 +22,7 @@ const profileIndex = async (req, res) => {
 
 const getEmailName = async (req, res) => {
   const user = await User.findOne({ email: req.user.email }).select(
-    "email name"
+    "email name",
   );
 
   if (!user)
@@ -35,7 +36,7 @@ const updateNameUser = async (req, res) => {
   const user = await User.findOneAndUpdate(
     { email: req.user.email },
     { name: newName.trim() },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   res.status(StatusCodes.OK).json({ success: true });
@@ -69,7 +70,7 @@ const updatePasswordUser = async (req, res, next) => {
     // Verifica che la nuova password sia diversa dalla vecchia
     if (await user.comparePassword(newPassword)) {
       throw new BadRequestError(
-        "New password cannot be the same as current password"
+        "New password cannot be the same as current password",
       );
     }
 
@@ -88,9 +89,15 @@ const updatePasswordUser = async (req, res, next) => {
 };
 
 const logOut = async (req, res) => {
-  res.cookie("jwtAccess");
-  res.cookie("jwtRefresh");
-  delete req.user;
+  const sessionsToRevoke = { activeSessions: req.auth.sessionId };
+  if (req.cookies.jwtRefresh) {
+    sessionsToRevoke.refreshTokens = req.cookies.jwtRefresh;
+  }
+
+  await User.updateOne({ _id: req.user._id }, { $pull: sessionsToRevoke });
+
+  res.clearCookie("jwtAccess", getAuthCookieOptions());
+  res.clearCookie("jwtRefresh", getAuthCookieOptions());
 
   res.status(StatusCodes.OK).json({ success: true });
 };

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Le mie Chat</title>
+    <title>My Profile</title>
     <meta name="user-email" content="{{USER_EMAIL}}" />
     <link rel="stylesheet" href="/css/root.css" />
     <link rel="stylesheet" href="/css/navMenu.css" />
@@ -20,8 +20,14 @@
       rel="stylesheet"
     />
   </head>
-  <body>
-    <div class="popUpResult"></div>
+  <body class="profile-page">
+    <div
+      class="popUpResult"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-hidden="true"
+    ></div>
 
     <div class="nav-menu">
       <a href="/chat">
@@ -39,34 +45,34 @@
         ></i>
       </a>
     </div>
-    <div class="chat-card">
+    <main class="profile-card">
       <div class="user-data-section">
         <div>
-          <span class="headers">name</span>
+          <span class="headers">Name</span>
           <span id="spanName"></span>
         </div>
         <div>
-          <span class="headers">email</span>
+          <span class="headers">Email</span>
           <span id="spanEmail"></span>
         </div>
       </div>
       <div class="cont-rest-profile">
         <div class="profile-section">
-          <h2>Cambia Nome</h2>
+          <h2>Change name</h2>
           <form id="change-name-form">
             <div class="form-group">
-              <label for="new-name">Nuovo Nome</label>
+              <label for="new-name">New name</label>
               <input type="text" id="new-name" name="new-name" required />
             </div>
-            <button type="submit" class="btn btn-primary">Aggiorna Nome</button>
+            <button type="submit" class="btn btn-primary">Update name</button>
           </form>
         </div>
 
         <div class="profile-section">
-          <h2>Cambia Password</h2>
+          <h2>Change password</h2>
           <form id="change-password-form">
             <div class="form-group">
-              <label for="current-password">Password Attuale</label>
+              <label for="current-password">Current password</label>
               <input
                 type="password"
                 id="current-password"
@@ -75,7 +81,7 @@
               />
             </div>
             <div class="form-group">
-              <label for="new-password">Nuova Password</label>
+              <label for="new-password">New password</label>
               <input
                 type="password"
                 id="new-password"
@@ -84,7 +90,7 @@
               />
             </div>
             <div class="form-group">
-              <label for="confirm-password">Conferma Nuova Password</label>
+              <label for="confirm-password">Confirm new password</label>
               <input
                 type="password"
                 id="confirm-password"
@@ -93,16 +99,16 @@
               />
             </div>
             <button type="submit" class="btn btn-primary">
-              Aggiorna Password
+              Update password
             </button>
           </form>
         </div>
 
         <div class="logout-section">
-          <button id="logout-btn" class="btn btn-danger">Logout</button>
+          <button id="logout-btn" class="btn btn-danger">Log out</button>
         </div>
       </div>
-    </div>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>

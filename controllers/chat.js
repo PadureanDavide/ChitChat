@@ -81,16 +81,35 @@ const createChat = async (req, res) => {
 
     //if the chat exists, then execute only the res
     if (chatExists) {
+      const reopenedChat = await Chat.findOneAndUpdate(
+        {
+          _id: chatExists._id,
+          isGroup: false,
+          "members.userId": req.user._id.toString(),
+        },
+        {
+          $set: {
+            "members.$.exitFromSingleChat": false,
+          },
+        },
+        { new: true }
+      );
+
+      if (!reopenedChat)
+        throw new BadRequestError("error reopening the existing chat");
+
       const nameUser = await User.findOne({
         _id: req.body.otherUserId,
       }).select("name");
 
-      res.status(StatusCodes.OK).json({
-        success: true,
-        exists: true,
-        _id: chatExists._id,
-        name: nameUser.name,
-      });
+      res
+        .status(StatusCodes.OK)
+        .json({
+          success: true,
+          exists: true,
+          _id: reopenedChat._id,
+          name: nameUser?.name || "",
+        });
     } else {
       //only if the chat do not exist
       const chat = await Chat.create({
@@ -306,7 +325,7 @@ const removeUnreadMess = async (req, res) => {
   const result = await Chat.findOneAndUpdate(
     {
       _id: chatId,
-      "members.userId": req.user._id,
+      "members.userId": req.user._id.toString(),
     },
     {
       $set: {
@@ -416,7 +435,8 @@ const deleteChat = async (req, res) => {
     chat = await Chat.findOneAndUpdate(
       {
         _id: chatId,
-        "members.name": req.user.email,
+        isGroup: false,
+        "members.userId": req.user._id.toString(),
       },
       {
         $set: {
@@ -433,10 +453,7 @@ const deleteChat = async (req, res) => {
         "chat not found or error during the updating of EXITFROMSINGLECHAT"
       );
 
-    if (
-      chat.members[0].exitFromSingleChat &&
-      chat.members[1].exitFromSingleChat
-    ) {
+    if (chat.members.every((member) => member.exitFromSingleChat)) {
       await confirmDeleteChat(chatId);
       res.status(StatusCodes.OK).json({ success: true, noMembersLeft: true });
     } else

@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", async function async() {
   let currentChatId = null;
   let currentUserId = null;
   let chatIsGroup = null;
+  let messageLoadSequence = 0;
 
   // User selection management
   let selectedUsers = new Set();
@@ -91,7 +92,7 @@ document.addEventListener("DOMContentLoaded", async function async() {
 
         const nameElement = document.createElement("div");
         nameElement.className = "user-name";
-        nameElement.textContent = user.name || "Nome non disponibile";
+        nameElement.textContent = user.name || "Name unavailable";
 
         const emailElement = document.createElement("div");
         emailElement.className = "user-email";
@@ -141,7 +142,7 @@ document.addEventListener("DOMContentLoaded", async function async() {
         //create name element
         const nameElement = document.createElement("div");
         nameElement.className = "chat-name";
-        nameElement.textContent = chat.nameChat || "Chat senza nome";
+        nameElement.textContent = chat.nameChat || "Untitled chat";
 
         li.appendChild(avatar);
         li.appendChild(nameElement);
@@ -153,7 +154,7 @@ document.addEventListener("DOMContentLoaded", async function async() {
         //create name element
         const nameElement = document.createElement("div");
         nameElement.className = "chat-name";
-        nameElement.textContent = chat.nameEmail?.name || "Chat senza nome";
+        nameElement.textContent = chat.nameEmail?.name || "Untitled chat";
 
         //create detail element (email)
         const detailsElement = document.createElement("div");
@@ -192,26 +193,25 @@ document.addEventListener("DOMContentLoaded", async function async() {
 
   //handle the change of the selected chat
   const handleChatSelection = async (id, liElement) => {
+    if (!liElement) return;
+
     document.querySelectorAll(".chat-list li").forEach((item) => {
       if (item.classList.contains("selected"))
         item.classList.remove("selected");
     });
 
-    if (liElement) {
-      unreadMessElement = liElement.querySelector(".unread-count");
+    const unreadBadge = liElement.querySelector(".unread-count");
 
-      if (unreadMessElement) {
-        unreadMessElement.remove();
-        await axios.patch(`/chat/removeUnreadMess/${liElement.id}`);
-      }
-
-      const checkIfPopUpOpen = document.querySelector(".openPopUp");
-      if (checkIfPopUpOpen) checkIfPopUpOpen.classList.remove("openPopUp");
-
-      loadMessages(id);
-    }
+    const checkIfPopUpOpen = document.querySelector(".openPopUp");
+    if (checkIfPopUpOpen) checkIfPopUpOpen.classList.remove("openPopUp");
 
     liElement.classList.add("selected");
+    await loadMessages(id);
+
+    if (unreadBadge) {
+      await axios.patch(`/chat/removeUnreadMess/${liElement.id}`);
+      unreadBadge.remove();
+    }
   };
 
   // Send a message
@@ -273,6 +273,7 @@ document.addEventListener("DOMContentLoaded", async function async() {
 
   //function called when a chat is cliked, so all the messages for that chat will be displayed
   const loadMessages = async (chatId) => {
+    const loadSequence = ++messageLoadSequence;
     currentChatId = chatId;
 
     //to connect to the communication channel
@@ -282,6 +283,8 @@ document.addEventListener("DOMContentLoaded", async function async() {
     const {
       data: { messages, isGroup },
     } = await axios.get(`/chat/messages/${chatId}`);
+
+    if (loadSequence !== messageLoadSequence) return;
 
     chatIsGroup = isGroup;
 
@@ -411,7 +414,7 @@ document.addEventListener("DOMContentLoaded", async function async() {
       // Crea il nome utente
       const userName = document.createElement("span");
       userName.className = "user-name";
-      userName.textContent = user.name || "Nome non disponibile";
+      userName.textContent = user.name || "Name unavailable";
 
       // Crea l'email utente
       const userEmail = document.createElement("span");
@@ -513,7 +516,7 @@ document.addEventListener("DOMContentLoaded", async function async() {
                 //create name element
                 const nameElement = document.createElement("div");
                 nameElement.className = "chat-name";
-                nameElement.textContent = name || "Chat senza nome";
+                nameElement.textContent = name || "Untitled chat";
 
                 //create detail element (email)
                 const detailsElement = document.createElement("div");
@@ -526,6 +529,9 @@ document.addEventListener("DOMContentLoaded", async function async() {
 
                 li.appendChild(avatar);
                 li.appendChild(containerNameEmail);
+                li.addEventListener("click", () => {
+                  handleChatSelection(_id, li);
+                });
                 chatList.appendChild(li);
 
                 //change the chat selected
@@ -722,45 +728,45 @@ document.addEventListener("DOMContentLoaded", async function async() {
   closePopUpListeners();
 
   const groupSettingsHtml_1 = ` <div class="popup-header">
-          <h3>Impostazioni del gruppo</h3>
+          <h3>Group settings</h3>
           <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" class="popup-close">
             <path fill="#a259c6" d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"></path>
           </svg>
         </div>
 
         <div class="users-list-container">
-          <h4>Seleziona partecipanti:</h4>
+          <h4>Select participants:</h4>
           <div class="users-list"><div class="user-item" id="settingsChat"><input type="checkbox" class="user-checkbox" disabled=""><label for="davidepadurean@gmail.com"><span class="user-avatar"><i class="fas fa-user"></i></span><span class="user-info"><span class="user-name">dave</span><span class="user-email">davidepadurean@gmail.com</span></span></label><span class="user-add-icon" id="removeUser"><i class="fa-solid fa-trash"></i></span></div><div class="user-item" id="settingsChat"><input type="checkbox" class="user-checkbox"><label for="giuliapadurean@gmail.com"><span class="user-avatar"><i class="fas fa-user"></i></span><span class="user-info"><span class="user-name">giulia</span><span class="user-email">giuliapadurean@gmail.com</span></span></label><span></span></div></div>
         </div>
         <button type="submit" id="addNewUsersToGroup" class="addUsers-btn impossible-create-btn">
-          <i class="fas fa-plus"></i> Aggiungi persone
+          <i class="fas fa-plus"></i> Add people
         </button>
 
         <button type="submit" class="addUsers-btn" id="exitGroup">
           <i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i>
-          abbandona il gruppo
+          Leave group
         </button>`;
 
   const groupSettingsHtml_2 = ` <div class="popup-header">
-          <h3>Impostazioni del gruppo</h3>
+          <h3>Group settings</h3>
           <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" class="popup-close">
             <path fill="#a259c6" d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"></path>
           </svg>
         </div>
 
         <div class="users-list-container">
-          <h4>Partecipanti:</h4>
+          <h4>Participants:</h4>
           <div class="users-list"><div class="user-item" id="settingsChat"><label for="davidepadurean@gmail.com"><span class="user-avatar"><i class="fas fa-user"></i></span><span class="user-info"><span class="user-name">dave</span><span class="user-email">davidepadurean@gmail.com</span></span></label><span class="user-add-icon" id="removeUser"><i class="fa-solid fa-trash"></i></span></div><div class="user-item" id="settingsChat"><input type="checkbox" class="user-checkbox"><label for="giuliapadurean@gmail.com"><span class="user-avatar"><i class="fas fa-user"></i></span><span class="user-info"><span class="user-name">giulia</span><span class="user-email">giuliapadurean@gmail.com</span></span></label><span></span></div></div>
         </div>
         
 
         <button type="submit" class="addUsers-btn" id="exitGroup">
           <i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i>
-          abbandona il gruppo
+          Leave group
         </button>`;
 
   const singleChatSettingsHtml = ` <div class="popup-header">
-          <h3>Impostazioni della chat</h3>
+          <h3>Chat settings</h3>
           <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" class="popup-close">
             <path fill="#a259c6" d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"></path>
           </svg>
@@ -772,7 +778,7 @@ document.addEventListener("DOMContentLoaded", async function async() {
 
         <button type="submit" class="addUsers-btn" id="exitGroup">
           <i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i>
-          esci dalla chat
+          Leave chat
         </button>`;
 
   // Ricollega tutti gli event listener come all'avvio

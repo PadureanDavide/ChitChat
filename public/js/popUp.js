@@ -1,19 +1,23 @@
 const popUpResult = document.querySelector(".popUpResult");
+let hidePopupTimeout;
 
 const popUpMessage = (mess, typeResult) => {
-  popUpResult.innerHTML = mess;
-  let classToManipulate;
-  if (typeResult) {
-    classToManipulate = "showPopUpSuccess";
-    popUpResult.classList.add(classToManipulate);
-  } else {
-    classToManipulate = "showPopUpDenied";
-    popUpResult.classList.add(classToManipulate);
+  if (!popUpResult) {
+    throw new Error("Popup message container is missing");
   }
 
-  // Rimuovi la classe dopo 5 secondi
-  setTimeout(() => {
-    popUpResult.classList.remove(classToManipulate);
+  clearTimeout(hidePopupTimeout);
+  popUpResult.classList.remove("showPopUpSuccess", "showPopUpDenied");
+  popUpResult.textContent = mess;
+  popUpResult.setAttribute("aria-live", typeResult ? "polite" : "assertive");
+  popUpResult.setAttribute("aria-hidden", "false");
+  popUpResult.classList.add(
+    typeResult ? "showPopUpSuccess" : "showPopUpDenied",
+  );
+
+  hidePopupTimeout = setTimeout(() => {
+    popUpResult.classList.remove("showPopUpSuccess", "showPopUpDenied");
+    popUpResult.setAttribute("aria-hidden", "true");
   }, 3000);
 };
 
