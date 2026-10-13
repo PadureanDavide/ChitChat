@@ -1,4 +1,4 @@
-# RealTimeChat
+# ChitChat
 
 Applicazione web di chat real-time realizzata con Node.js, Express, MongoDB e Socket.IO. Include registrazione e accesso degli utenti, chat e gestione del profilo.
 
